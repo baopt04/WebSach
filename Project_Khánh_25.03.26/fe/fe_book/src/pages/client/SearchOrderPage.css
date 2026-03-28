@@ -1,0 +1,246 @@
+/* ====================================================
+   SEARCH ORDER PAGE (Tra cứu đơn hàng)
+   ==================================================== */
+.search-order-page {
+  padding: 20px 0 80px;
+  color: #fff; /* default client layout white text matching */
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.search-breadcrumb {
+  margin-bottom: 40px;
+  font-size: 13px;
+}
+
+/* ─── FORM VIEW (GIỐNG ĐĂNG NHẬP) ─── */
+.search-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 80px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.search-image {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.search-image img {
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  border-radius: 20px;
+}
+
+.search-form-wrapper {
+  flex: 1;
+  max-width: 440px;
+  width: 100%;
+}
+
+.search-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #222;
+  margin: 0 0 12px;
+  letter-spacing: -0.5px;
+}
+
+.search-subtitle {
+  font-size: 14.5px;
+  color: #666;
+  margin: 0 0 32px;
+  line-height: 1.5;
+}
+
+.search-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-label {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
+
+.btn-search-submit {
+  height: 46px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 6px;
+  margin-top: 8px;
+  box-shadow: 0 4px 12px rgba(22, 119, 255, 0.2);
+}
+
+/* ─── DETAIL VIEW (GIỐNG ORDER DETAIL PAGE) ─── */
+.search-order-page.detail-view {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.search-order-page.detail-view .od-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.search-order-page.detail-view .od-id-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+}
+
+.search-order-page.detail-view .od-id {
+  font-size: 14.5px;
+  color: #333;
+}
+
+.search-order-page.detail-view .od-split {
+  color: #ddd;
+}
+
+.search-order-page.detail-view .od-status-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1677ff;
+  text-transform: uppercase;
+}
+
+.search-order-page.detail-view .od-section {
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  padding: 24px;
+}
+
+.search-order-page.detail-view .od-timeline {
+  padding: 32px 24px;
+}
+
+.search-order-page.detail-view .od-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.search-order-page.detail-view .od-info-box h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111;
+  margin: 0 0 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.search-order-page.detail-view .od-info-box p {
+  font-size: 14px;
+  color: #444;
+  margin: 0 0 6px;
+  line-height: 1.5;
+}
+
+.search-order-page.detail-view .od-products h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111;
+  margin: 0 0 16px;
+}
+
+.search-order-page.detail-view .table-product {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.search-order-page.detail-view .tp-img {
+  width: 50px;
+  height: 68px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #f0f0f0;
+}
+
+.search-order-page.detail-view .tp-title {
+  font-weight: 500;
+  color: #222;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.search-order-page.detail-view .tp-total {
+  color: #1677ff;
+}
+
+.search-order-page.detail-view .od-summary {
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  padding: 24px;
+  align-self: flex-end;
+  width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.search-order-page.detail-view .ods-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: #555;
+}
+
+.search-order-page.detail-view .ods-total {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111;
+}
+
+.search-order-page.detail-view .ods-total-price {
+  font-size: 24px;
+  font-weight: 800;
+  color: #ff4d4f;
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 860px) {
+  .search-container {
+    flex-direction: column;
+    gap: 40px;
+  }
+  
+  .search-image {
+    max-width: 400px;
+  }
+
+  .search-order-page.detail-view .od-info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .search-order-page.detail-view .od-summary {
+    width: 100%;
+    align-self: stretch;
+  }
+}
