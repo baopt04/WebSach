@@ -1,13 +1,16 @@
 import { useState } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   UserOutlined,
   ShoppingOutlined,
-  EnvironmentOutlined,
   LockOutlined,
+  LogoutOutlined,
   IdcardOutlined,
 } from '@ant-design/icons';
+import { Modal, message } from 'antd';
 import './AccountLayout.css';
+
+const { confirm } = Modal;
 
 const menuItems = [
   {
@@ -21,21 +24,38 @@ const menuItems = [
     label: 'Tài khoản của tôi',
     icon: <UserOutlined />,
     children: [
-      { key: 'profile', label: 'Hồ sơ & Địa chỉ', icon: <IdcardOutlined />, path: '/account/profile' },
-      { key: 'password', label: 'Đổi mật khẩu', icon: <LockOutlined />, path: '/account/password' },
+      {
+        key: 'profile',
+        label: 'Hồ sơ & Địa chỉ',
+        icon: <IdcardOutlined />,
+        path: '/account/profile',
+      },
+      {
+        key: 'password',
+        label: 'Đổi mật khẩu',
+        icon: <LockOutlined />,
+        path: '/account/password',
+      },
     ],
+  },
+  {
+    key: 'logout',
+    label: 'Đăng xuất',
+    icon: <LogoutOutlined />,
+    isLogout: true,
   },
 ];
 
 const mockUser = {
-  name: 'Nguyễn Văn Khánh',
-  phone: '0987 654 321',
-  email: 'khanhnguyen@email.com',
+  name: localStorage.getItem("hoTen") || "Chưa cập nhật",
+  phone: localStorage.getItem("soDienThoai") || "Chưa cập nhật",
+  email: localStorage.getItem("email") || "Chưa cập nhật",
   avatar: null,
 };
 
 const AccountLayout = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [expandedMenu, setExpandedMenu] = useState('account');
 
   const isActive = (path) => location.pathname === path;
@@ -44,16 +64,33 @@ const AccountLayout = () => {
     setExpandedMenu((prev) => (prev === key ? '' : key));
   };
 
+
+  const handleLogout = () => {
+    confirm({
+      title: 'Xác nhận đăng xuất',
+      content: 'Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?',
+      okText: 'Đăng xuất',
+      okType: 'danger',
+      cancelText: 'Huỷ',
+      onOk() {
+        localStorage.clear();
+        message.success('Đăng xuất thành công');
+        navigate('/login');
+      },
+    });
+  };
+
   return (
     <div className="account-layout">
-
       <aside className="account-sidebar">
         <div className="sidebar-user">
           <div className="user-avatar">
             {mockUser.avatar ? (
               <img src={mockUser.avatar} alt="avatar" />
             ) : (
-              <span className="avatar-fallback">{mockUser.name[0]}</span>
+              <span className="avatar-fallback">
+                {mockUser.name[0]}
+              </span>
             )}
           </div>
           <div className="user-meta">
@@ -68,19 +105,24 @@ const AccountLayout = () => {
             item.children ? (
               <div key={item.key} className="nav-group">
                 <button
-                  className={`nav-group-title ${expandedMenu === item.key ? 'expanded' : ''}`}
+                  className={`nav-group-title ${expandedMenu === item.key ? 'expanded' : ''
+                    }`}
                   onClick={() => toggleMenu(item.key)}
                 >
                   {item.icon} <span>{item.label}</span>
-                  <span className="nav-arrow">{expandedMenu === item.key ? '▾' : '▸'}</span>
+                  <span className="nav-arrow">
+                    {expandedMenu === item.key ? '▾' : '▸'}
+                  </span>
                 </button>
+
                 {expandedMenu === item.key && (
                   <div className="nav-sub-list">
                     {item.children.map((child) => (
                       <Link
                         key={child.key}
                         to={child.path}
-                        className={`nav-sub-item ${isActive(child.path) ? 'active' : ''}`}
+                        className={`nav-sub-item ${isActive(child.path) ? 'active' : ''
+                          }`}
                       >
                         {child.icon} <span>{child.label}</span>
                       </Link>
@@ -88,11 +130,23 @@ const AccountLayout = () => {
                   </div>
                 )}
               </div>
+            ) : item.isLogout ? (
+              // ✅ Logout item
+              <div
+                key={item.key}
+                className="nav-item logout-item"
+                onClick={handleLogout}
+              >
+                <span className="logout-text">
+                  {item.icon} <span>{item.label}</span>
+                </span>
+              </div>
             ) : (
               <Link
                 key={item.key}
                 to={item.path}
-                className={`nav-item ${isActive(item.path) ? 'active' : ''}`}
+                className={`nav-item ${isActive(item.path) ? 'active' : ''
+                  }`}
               >
                 {item.icon} <span>{item.label}</span>
               </Link>

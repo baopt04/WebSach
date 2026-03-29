@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import { Button, Tag, Divider, Input, Modal, Select } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { Button, Tag, Divider, Input, Modal, Select, message } from 'antd';
+import { PlusOutlined, LogoutOutlined } from '@ant-design/icons';
+import { formatDate } from '../../utils/format';
+import { useNavigate } from 'react-router-dom';
 import './ProfilePage.css';
 
 const { Option } = Select;
+const { confirm } = Modal;
 
 const initialAddresses = [
   {
@@ -22,17 +25,24 @@ const initialAddresses = [
   },
 ];
 
-const mockProfile = {
-  name: 'Nguyễn Văn Khánh',
-  address: '123 Đường ABC, Phường XYZ, Quận 1, TP.HCM',
-  phone: '0987 654 321',
-  gender: 'Nam',
-  dob: '15/08/1998',
-};
-
 const ProfilePage = () => {
+  const navigate = useNavigate();
   const [addresses, setAddresses] = useState(initialAddresses);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const rawGioiTinh = localStorage.getItem("gioiTinh");
+  let genderDisplay = "Chưa cập nhật";
+  if (rawGioiTinh === "true") genderDisplay = "Nam";
+  if (rawGioiTinh === "false") genderDisplay = "Nữ";
+
+  const profile = {
+    name: localStorage.getItem("hoTen") || "Chưa cập nhật",
+    email: localStorage.getItem("email") || "Chưa cập nhật",
+    phone: localStorage.getItem("soDienThoai") || "Chưa cập nhật",
+    gender: genderDisplay,
+    dob: localStorage.getItem("ngaySinh") || "Chưa cập nhật",
+    address: '123 Đường ABC, Phường XYZ, Quận 1, TP.HCM',
+  };
 
   const handleSetDefault = (id) => {
     setAddresses((prev) =>
@@ -46,32 +56,39 @@ const ProfilePage = () => {
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
 
+
+
   return (
     <div className="profile-page">
       <h2 className="page-title">Hồ sơ của tôi</h2>
       <div className="profile-card">
         <div className="profile-row">
           <span className="pr-label">Họ và tên:</span>
-          <span className="pr-value">{mockProfile.name}</span>
+          <span className="pr-value">{profile.name}</span>
+        </div>
+        <div className="profile-row">
+          <span className="pr-label">Email:</span>
+          <span className="pr-value">{profile.email}</span>
         </div>
         <div className="profile-row">
           <span className="pr-label">Số điện thoại:</span>
-          <span className="pr-value">{mockProfile.phone}</span>
+          <span className="pr-value">{profile.phone}</span>
         </div>
         <div className="profile-row">
           <span className="pr-label">Giới tính:</span>
-          <span className="pr-value">{mockProfile.gender}</span>
+          <span className="pr-value">{profile.gender}</span>
         </div>
         <div className="profile-row">
           <span className="pr-label">Ngày sinh:</span>
-          <span className="pr-value">{mockProfile.dob}</span>
+          <span className="pr-value">{formatDate(profile.dob)}</span>
         </div>
         <div className="profile-row">
-          <span className="pr-label">Địa chỉ liên hệ:</span>
-          <span className="pr-value">{mockProfile.address}</span>
+          <span className="pr-label">Địa chỉ liên hệ (Mặc định):</span>
+          <span className="pr-value">{profile.address}</span>
         </div>
-        <div className="profile-actions">
+        <div className="profile-actions" style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
           <Button type="primary" ghost>Cập nhật hồ sơ</Button>
+      
         </div>
       </div>
 

@@ -1,4 +1,5 @@
 package com.example.datn.security;
+
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Service;
@@ -8,29 +9,47 @@ import java.util.Date;
 
 @Service
 public class JwtService {
-    private final String SECRET_KEY = "WEBSACHVIP_SECRET_KEY_12345678901234567890";
+
+    private static final String SECRET_KEY = "WEBSACH_SECRET_KEY_DATN_2024_SECURE_12345";
+    private static final long EXPIRATION_MS = 1000L * 60 * 60 * 10;
 
     private Key getSignKey() {
         return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
     }
 
-    public String generateToken(String username, String role) {
 
+    public String generateToken(String email, String role) {
         return Jwts.builder()
-                .setSubject(username)
+                .setSubject(email)
                 .claim("role", role)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))
+                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_MS))
                 .signWith(getSignKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    public String extractUsername(String token) {
+ // láy email từ token
+    public String extractEmail(String token) {
         return extractAllClaims(token).getSubject();
     }
 
+ // lấy role từ token
     public String extractRole(String token) {
         return extractAllClaims(token).get("role", String.class);
+    }
+
+   //Check xem token đã hết hạn chưa
+    public boolean isTokenExpired(String token) {
+        return extractAllClaims(token).getExpiration().before(new Date());
+    }
+
+  // Check token có hợp leje hay không
+    public boolean isTokenValid(String token, String email) {
+        try {
+            return extractEmail(token).equals(email) && !isTokenExpired(token);
+        } catch (JwtException e) {
+            return false;
+        }
     }
 
     private Claims extractAllClaims(String token) {
@@ -39,9 +58,5 @@ public class JwtService {
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
-    }
-
-    public boolean isTokenValid(String token, String username) {
-        return extractUsername(token).equals(username);
     }
 }

@@ -73,7 +73,11 @@ const ClientHeader = () => {
             </button>
           )}
 
-          <Link to="/login" className="action-btn" title="Đăng nhập">
+          <Link 
+            to={localStorage.getItem("token") ? "/account" : "/login"} 
+            className="action-btn" 
+            title={localStorage.getItem("token") ? "Tài khoản của tôi" : "Đăng nhập"}
+          >
             <UserOutlined />
           </Link>
 
