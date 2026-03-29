@@ -1,0 +1,278 @@
+import { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { getChiTietSanPham } from '../../services/client/SanPhamCustomer';
+import { Rate, InputNumber, Tabs, Tag, Breadcrumb } from 'antd';
+import {
+  ShoppingCartOutlined,
+  ThunderboltOutlined,
+  HeartOutlined,
+  ShareAltOutlined,
+  CheckCircleFilled,
+  TruckOutlined,
+  SafetyCertificateOutlined,
+  RedoOutlined,
+  StarFilled,
+  UserOutlined,
+  BookOutlined,
+  FileTextOutlined,
+  TagOutlined,
+} from '@ant-design/icons';
+import './ProductDetailPage.css';
+
+// Removes mockProduct and relatedBooks
+const ImageGallery = ({ images }) => {
+  const [selected, setSelected] = useState(0);
+
+  return (
+    <div className="gallery-wrap">
+      <div className="gallery-main-img">
+        <img src={images[selected]} alt="product" />
+      </div>
+      <div className="gallery-thumbs">
+        {images.map((img, i) => (
+          <div
+            key={i}
+            className={`gallery-thumb ${selected === i ? 'active' : ''}`}
+            onClick={() => setSelected(i)}
+          >
+            <img src={img} alt={`thumb-${i}`} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+
+const ProductInfo = ({ product }) => {
+  const [qty, setQty] = useState(1);
+  const hasDiscount = product.originalPrice && product.originalPrice > product.price;
+  const discount = hasDiscount ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : 0;
+
+  return (
+    <div className="detail-info">
+      <div className="detail-badges">
+        <span className="badge-instock"><CheckCircleFilled /> Còn hàng </span>
+      </div>
+
+      <h1 className="detail-title">{product.title}</h1>
+      <div className="detail-meta-row">
+        <span className="meta-item">
+          <UserOutlined /> Tác giả: <Link to="#" className="meta-link">{product.author}</Link>
+        </span>
+        <span className="meta-sep">|</span>
+        <span className="meta-item">
+          <BookOutlined /> NXB: <Link to="#" className="meta-link">{product.publisher}</Link>
+        </span>
+      </div>
+
+      <div className="detail-price-box">
+        <span className="price-current-1">{product.price?.toLocaleString('vi-VN')}₫</span>
+        {hasDiscount && (
+          <>
+            <span className="price-original">{product.originalPrice?.toLocaleString('vi-VN')}₫</span>
+            <span className="price-discount">-{discount}%</span>
+          </>
+        )}
+      </div>
+
+
+
+      {/* <ul className="detail-highlights">
+        {product.highlights.map((h, i) => (
+          <li key={i}><CheckCircleFilled className="check-icon" /> {h}</li>
+        ))}
+      </ul> */}
+
+      <div className="detail-qty-row">
+        <span className="qty-label">Số lượng:</span>
+        <InputNumber
+          min={1}
+          max={product.stock}
+          value={qty}
+          onChange={setQty}
+          className="qty-input"
+        />
+        <span className="qty-stock">{product.stock} sản phẩm có sẵn</span>
+      </div>
+
+
+      <div className="detail-cta">
+        <button className="btn-buy-now-detail">
+          Mua Ngay
+        </button>
+        <button className="btn-add-cart">
+          <ShoppingCartOutlined /> Thêm Vào Giỏ
+        </button>
+      </div>
+
+
+      <div className="detail-policies">
+        <div className="policy-item">
+          <TruckOutlined className="policy-icon" />
+          <div>
+            <p className="policy-title">Giao hàng nhanh</p>
+            <p className="policy-desc">Miễn phí với đơn từ 150,000₫</p>
+          </div>
+        </div>
+        <div className="policy-item">
+          <SafetyCertificateOutlined className="policy-icon" />
+          <div>
+            <p className="policy-title">Cam kết chính hãng</p>
+            <p className="policy-desc">100% sách thật, chất lượng đảm bảo</p>
+          </div>
+        </div>
+        <div className="policy-item">
+          <RedoOutlined className="policy-icon" />
+          <div>
+            <p className="policy-title">Đổi trả dễ dàng</p>
+            <p className="policy-desc">30 ngày nếu sản phẩm lỗi</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ProductDetailPage = () => {
+  const { id } = useParams();
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDetail = async () => {
+      try {
+        setLoading(true);
+        const data = await getChiTietSanPham(id);
+
+        setProduct({
+          id: data.id,
+          title: data.tenSach,
+          author: data.tenTacGias && data.tenTacGias.length > 0 ? data.tenTacGias.join(', ') : 'Chưa cập nhật',
+          publisher: data.tenNhaXuatBan || 'Chưa cập nhật',
+          translator: 'Chưa cập nhật',
+          publishYear: data.namXuatBan || 'Chưa cập nhật',
+          pages: data.soTrang || 0,
+          size: data.kichThuoc || 'Chưa cập nhật',
+          cover: 'Chưa cập nhật',
+          language: data.ngonNgu || 'Chưa cập nhật',
+          isbn: data.maSach || 'Chưa cập nhật',
+          category: data.tenTheLoai || 'Chưa cập nhật',
+          price: data.giaBan || 0,
+          originalPrice: null, // Update logic if backend supports real original price
+          stock: data.soLuong || 0,
+          sold: 0,
+          rating: 4.8,
+          reviewCount: 0,
+          images: data.hinhAnhs && data.hinhAnhs.length > 0 ? data.hinhAnhs : ['https://picsum.photos/seed/book-detail-1/500/650'],
+          tags: [],
+          description: data.moTa || '<p>Chưa có mô tả cho sản phẩm này.</p>',
+          highlights: [],
+        });
+      } catch (error) {
+        console.error("Lỗi lấy chi tiết sản phẩm", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (id) fetchDetail();
+  }, [id]);
+
+  if (loading) {
+    return <div className="detail-page" style={{ padding: '100px 0', textAlign: 'center' }}>Đang tải...</div>;
+  }
+
+  if (!product) {
+    return <div className="detail-page" style={{ padding: '100px 0', textAlign: 'center' }}>Không tìm thấy sản phẩm.</div>;
+  }
+
+
+  const tabItems = [
+    {
+      key: 'desc',
+      label: <span><FileTextOutlined /> Mô tả sách</span>,
+      children: (
+        <div className="tab-desc">
+          {product.highlights && product.highlights.length > 0 && (
+            <div className="highlights-box">
+              <h4>Điểm nổi bật</h4>
+              <ul>
+                {product.highlights.map((h, i) => (
+                  <li key={i}><CheckCircleFilled className="check-icon" /> {h}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <div
+            className="desc-content"
+            dangerouslySetInnerHTML={{ __html: product.description }}
+          />
+        </div>
+      ),
+    },
+    {
+      key: 'specs',
+      label: <span><TagOutlined /> Thông tin chi tiết</span>,
+      children: (
+        <div className="tab-specs">
+          <table className="specs-table">
+            <tbody>
+              {[
+                ['Tác giả', product.author],
+                ['Nhà xuất bản', product.publisher],
+                ['Người dịch', product.translator],
+                ['Năm xuất bản', product.publishYear],
+                ['Số trang', `${product.pages} trang`],
+                ['Kích thước', product.size],
+                ['Loại bìa', product.cover],
+                ['Ngôn ngữ', product.language],
+                ['ISBN', product.isbn],
+                ['Danh mục', product.category],
+              ].map(([label, val]) => (
+                <tr key={label}>
+                  <td className="spec-label">{label}</td>
+                  <td className="spec-val">{val}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ),
+    },
+
+  ];
+
+  return (
+    <div className="detail-page">
+      <Breadcrumb
+        className="detail-breadcrumb"
+        items={[
+          { title: <Link to="/">Trang chủ</Link> },
+          { title: <Link to="/products">Sản phẩm</Link> },
+          { title: product.title },
+        ]}
+      />
+
+      <div className="detail-main">
+        <ImageGallery images={product.images} />
+        <ProductInfo product={product} />
+      </div>
+
+      <div className="detail-tabs-wrap">
+        <Tabs defaultActiveKey="desc" items={tabItems} className="detail-tabs" />
+      </div>
+
+
+      <div className="related-section">
+        <div className="related-header">
+          <h2 className="related-title">Sách có thể bạn thích</h2>
+        </div>
+        <div className="related-grid">
+          <p style={{ textAlign: 'center', width: '100%', color: '#888' }}>Chưa có tính năng liên quan</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ProductDetailPage;

@@ -1,0 +1,158 @@
+.order-detail-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.od-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.od-id-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+}
+
+.od-id {
+  font-size: 14.5px;
+  color: #333;
+}
+
+.od-split {
+  color: #ddd;
+}
+
+.od-status-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1677ff;
+  text-transform: uppercase;
+}
+
+.od-section {
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  padding: 24px;
+}
+
+.od-timeline {
+  padding: 32px 24px;
+}
+
+.od-timeline :global(.ant-steps-item-title) {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.od-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.od-info-box h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111;
+  margin: 0 0 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.od-info-box p {
+  font-size: 14px;
+  color: #444;
+  margin: 0 0 6px;
+  line-height: 1.5;
+}
+
+.od-products h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111;
+  margin: 0 0 16px;
+}
+
+.table-product {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tp-img {
+  width: 50px;
+  height: 68px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #f0f0f0;
+}
+
+.tp-title {
+  font-weight: 500;
+  color: #222;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tp-total {
+  color: #1677ff;
+}
+
+.od-summary {
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  padding: 24px;
+  align-self: flex-end;
+  width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ods-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: #555;
+}
+
+.ods-total {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111;
+}
+
+.ods-total-price {
+  font-size: 24px;
+  font-weight: 800;
+  color: #ff4d4f;
+}
+
+
+@media (max-width: 768px) {
+  .od-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .od-summary {
+    width: 100%;
+    align-self: stretch;
+  }
+}

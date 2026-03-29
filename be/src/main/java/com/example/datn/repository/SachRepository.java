@@ -1,0 +1,26 @@
+package com.example.datn.repository;
+
+import com.example.datn.entity.Sach;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+
+import java.util.List;
+
+public interface SachRepository extends JpaRepository<Sach, Integer> {
+    
+    @Query("SELECT s FROM Sach s WHERE s.trangThai = true ORDER BY s.ngayTao DESC")
+    List<Sach> findTop10Newest(Pageable pageable);
+
+    @Query("SELECT s.id FROM HoaDonChiTiet hdct " +
+           "JOIN hdct.hoaDon hd " +
+           "JOIN hdct.sach s " +
+           "WHERE hd.trangThai = 'THANH_CONG' AND s.trangThai = true " +
+           "GROUP BY s.id " +
+           "ORDER BY SUM(hdct.soLuong) DESC")
+    List<Integer> findBestSellingSachIds(Pageable pageable);
+
+    List<Sach> findByTheLoaiIdAndTrangThaiTrue(Integer idTheLoai);
+    List<Sach> findByNhaXuatBanIdAndTrangThaiTrue(Integer idNhaXuatBan);
+    List<Sach> findByTrangThaiTrue();
+}

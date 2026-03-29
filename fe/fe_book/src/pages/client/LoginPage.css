@@ -1,0 +1,132 @@
+body.login-body {
+  background: #fff;
+}
+
+.login-page {
+  padding: 20px 0 80px;
+  color: #333;
+
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.login-breadcrumb {
+  margin-bottom: 40px;
+  font-size: 13px;
+}
+
+.login-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 80px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.login-image {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-image img {
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.login-form-wrapper {
+  flex: 1;
+  max-width: 400px;
+  width: 100%;
+}
+
+.login-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #222;
+  margin-bottom: 32px;
+  letter-spacing: -0.5px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-label {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
+
+.login-input {
+  border-radius: 6px;
+}
+
+.form-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.remember-cb {
+  font-size: 14px;
+  color: #666;
+}
+
+.forgot-link {
+  font-size: 14px;
+  color: #1677ff;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.forgot-link:hover {
+  text-decoration: underline;
+}
+
+.btn-login-submit {
+  height: 44px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(22, 119, 255, 0.2);
+}
+
+.login-footer {
+  font-size: 14px;
+  color: #444;
+}
+
+.register-link {
+  color: #1677ff;
+  font-weight: 500;
+  text-decoration: none;
+  margin-left: 4px;
+}
+
+.register-link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 860px) {
+  .login-container {
+    flex-direction: column;
+    gap: 40px;
+  }
+
+  .login-image {
+    max-width: 400px;
+  }
+}

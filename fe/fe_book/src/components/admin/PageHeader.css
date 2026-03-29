@@ -1,0 +1,26 @@
+.admin-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.admin-page-title {
+  margin: 0 !important;
+  color: #1a1a2e;
+}
+
+.admin-page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-add-btn {
+  background: linear-gradient(135deg, #4096ff, #1677ff) !important;
+  border: none !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+}

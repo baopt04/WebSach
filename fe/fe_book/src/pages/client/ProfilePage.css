@@ -1,0 +1,143 @@
+.profile-page {
+  display: flex;
+  flex-direction: column;
+  color: #333;
+}
+
+.page-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 20px;
+}
+
+.profile-card {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.profile-row {
+  display: flex;
+  align-items: center;
+  font-size: 14.5px;
+}
+
+.pr-label {
+  width: 150px;
+  color: #888;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.pr-value {
+  color: #222;
+  font-weight: 500;
+}
+
+.profile-actions {
+  margin-top: 8px;
+}
+
+
+.addresses-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.addresses-header .page-title {
+  margin: 0;
+}
+
+.addresses-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.address-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  padding: 20px;
+  transition: all 0.2s ease;
+}
+
+.address-card:hover {
+  border-color: #a0bcf8;
+  box-shadow: 0 4px 12px rgba(22, 119, 255, 0.05);
+}
+
+.address-card.default {
+  border-color: #1677ff;
+  background: #f0f5ff;
+}
+
+.ac-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.ac-name-phone {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  color: #222;
+}
+
+.ac-split {
+  color: #ccc;
+}
+
+.ac-phone {
+  color: #666;
+  font-weight: 500;
+}
+
+.ac-detail {
+  font-size: 14px;
+  color: #555;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.ac-tag {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+.ac-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.ac-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-set-default {
+  background: #fff;
+  color: #444;
+}
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 10px;
+}

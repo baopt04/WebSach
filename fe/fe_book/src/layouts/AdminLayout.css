@@ -1,0 +1,192 @@
+/* ===== ADMIN LAYOUT ===== */
+.admin-layout {
+  min-height: 100vh;
+}
+
+/* ===== SIDER ===== */
+.admin-sider {
+  position: fixed !important;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 100;
+  overflow: auto;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+}
+
+.admin-sider .ant-layout-sider-children {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Logo */
+.admin-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 64px;
+  padding: 0 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.admin-logo-icon {
+  font-size: 22px;
+  color: #4096ff;
+}
+
+.admin-logo-text {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+/* Menu */
+.admin-menu {
+  flex: 1;
+  border-right: none !important;
+  padding: 8px 0;
+}
+
+.admin-menu .ant-menu-item {
+  margin: 2px 8px !important;
+  border-radius: 8px !important;
+  width: calc(100% - 16px) !important;
+}
+
+.admin-menu .ant-menu-item-selected {
+  background: linear-gradient(135deg, #4096ff, #1677ff) !important;
+}
+
+/* Hide default trigger, use custom one */
+.admin-sider .ant-layout-sider-trigger {
+  display: none;
+}
+
+/* ===== MAIN LAYOUT ===== */
+.admin-main {
+  transition: margin-left 0.2s ease;
+}
+
+/* ===== HEADER ===== */
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: #fff;
+  height: 64px;
+  position: sticky;
+  top: 0;
+  z-index: 99;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.admin-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.admin-collapse-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 18px;
+  color: #595959;
+  transition: all 0.2s;
+}
+
+.admin-collapse-btn:hover {
+  background: #f5f5f5;
+  color: #1677ff;
+}
+
+.admin-breadcrumb {
+  font-size: 14px;
+}
+
+.admin-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-header-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 18px;
+  color: #595959;
+  transition: all 0.2s;
+}
+
+.admin-header-icon-btn:hover {
+  background: #f5f5f5;
+  color: #1677ff;
+}
+
+.admin-avatar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.admin-avatar-wrap:hover {
+  background: #f5f5f5;
+}
+
+.admin-avatar {
+  background: linear-gradient(135deg, #4096ff, #1677ff) !important;
+}
+
+.admin-username {
+  font-weight: 600;
+  color: #262626;
+}
+
+/* ===== CONTENT ===== */
+.admin-content {
+  padding: 24px;
+  background: #f5f7fa;
+  min-height: calc(100vh - 64px);
+}
+
+.admin-content-inner {
+  max-width: 100%;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .admin-header {
+    padding: 0 16px;
+  }
+
+  .admin-content {
+    padding: 16px;
+  }
+
+  .admin-username {
+    display: none;
+  }
+}
