@@ -125,9 +125,20 @@ public class HoaDonServiceImpl implements HoaDonService {
                     .build();
         }).collect(Collectors.toList());
 
+        List<LichSuDonHang> lichSuList = lichSuDonHangRepository.findByHoaDonIdOrderByNgayTaoDesc(idHoaDon);
+        List<LichSuDonHangResponse> lichSuResponses = lichSuList.stream().map(ls -> LichSuDonHangResponse.builder()
+                .id(ls.getId())
+                .idHoaDon(ls.getHoaDon().getId())
+                .tenNhanVien(ls.getTaiKhoan() != null ? ls.getTaiKhoan().getHoTen() : null)
+                .trangThai(ls.getTrangThai())
+                .ghiChu(ls.getGhiChu())
+                .ngayTao(ls.getNgayTao())
+                .build()).collect(Collectors.toList());
+
         return HoaDonDetailResponse.builder()
                 .hoaDon(hdResponse)
                 .chiTiets(ctResponses)
+                .lichSuDonHang(lichSuResponses)
                 .build();
     }
 

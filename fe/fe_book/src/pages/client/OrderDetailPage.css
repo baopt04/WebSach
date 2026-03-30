@@ -44,6 +44,7 @@
   background: #ffffff;
   border: 1px solid #e8e8e8;
   border-radius: 10px;
+
   padding: 24px;
 }
 
@@ -68,7 +69,8 @@
   color: #111;
   margin: 0 0 12px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #f0f0f0;
+  /* border-bottom: 2px solid #1677ff; */
+
 }
 
 .od-info-box p {

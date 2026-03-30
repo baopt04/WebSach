@@ -19,7 +19,7 @@ import {
 } from '@ant-design/icons';
 import './ProductDetailPage.css';
 
-// Removes mockProduct and relatedBooks
+
 const ImageGallery = ({ images }) => {
   const [selected, setSelected] = useState(0);
 
@@ -159,7 +159,7 @@ const ProductDetailPage = () => {
           isbn: data.maSach || 'Chưa cập nhật',
           category: data.tenTheLoai || 'Chưa cập nhật',
           price: data.giaBan || 0,
-          originalPrice: null, // Update logic if backend supports real original price
+          originalPrice: null,
           stock: data.soLuong || 0,
           sold: 0,
           rating: 4.8,

@@ -1,10 +1,10 @@
-package com.example.datn.service.impl.customer;
+package com.example.datn.service;
 
 import com.example.datn.dto.response.client.ClientSachDetailResponse;
 import com.example.datn.dto.response.client.ClientSanPhamResponse;
 import java.util.List;
 
-public interface ClientSanPhamService {
+public interface CustomerSanPhamService {
     List<ClientSanPhamResponse> getAllSanPham();
     List<ClientSanPhamResponse> getSanPhamBanChay();
     List<ClientSanPhamResponse> getSanPhamMoiNhat();

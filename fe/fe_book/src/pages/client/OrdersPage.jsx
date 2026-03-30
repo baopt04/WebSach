@@ -1,107 +1,100 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Tag, Button, Divider } from 'antd';
+import { Tag, Button, Divider, Spin, message } from 'antd';
 import { EyeFilled } from '@ant-design/icons';
+import { getMyOrders } from '../../services/client/ProfileCustomer';
+import { formatDate } from '../../utils/format';
 import './OrdersPage.css';
 
-const mockOrders = [
-  {
-    id: 'HD881712',
-    date: '23-12-2023 16:37:35',
-    status: 'pending',
-    totalAmount: 935000,
-    items: [
-      {
-        id: 1,
-        title: 'Đắc Nhân Tâm – How to Win Friends and Influence People',
-        image: 'https://picsum.photos/seed/book1/80/110',
-        price: 89000,
-        qty: 1,
-      },
-      {
-        id: 2,
-        title: 'Nhà Giả Kim (Tái Bản 2023)',
-        image: 'https://picsum.photos/seed/book2/80/110',
-        price: 125000,
-        qty: 2,
-      },
-    ],
-  },
-  {
-    id: 'HD880199',
-    date: '20-12-2023 10:15:00',
-    status: 'completed',
-    totalAmount: 450000,
-    items: [
-      {
-        id: 3,
-        title: 'Hiểu Về Trái Tim',
-        image: 'https://picsum.photos/seed/book3/80/110',
-        price: 150000,
-        qty: 3,
-      },
-    ],
-  },
-];
-
 const statusConfig = {
-  pending: { label: 'Chờ xác nhận', color: 'orange' },
-  confirmed: { label: 'Đã xác nhận', color: 'blue' },
-  shipping: { label: 'Đang giao hàng', color: 'cyan' },
-  completed: { label: 'Hoàn thành', color: 'green' },
-  cancelled: { label: 'Đã hủy', color: 'red' },
+  CHO_XAC_NHAN: { label: 'Chờ xác nhận', color: 'orange' },
+  CHO_GIAO_HANG: { label: 'Chờ giao hàng', color: 'blue' },
+  DANG_GIAO: { label: 'Đang giao hàng', color: 'cyan' },
+  THANH_CONG: { label: 'Thành công', color: 'green' },
+  DA_HUY: { label: 'Đã hủy', color: 'red' },
+  HOAN_TRA: { label: 'Hoàn trả', color: 'purple' }
 };
 
 const OrdersPage = () => {
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const res = await getMyOrders();
+      setOrders(res || []);
+    } catch (error) {
+      message.error("Lỗi khi tải danh sách đơn hàng.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <div style={{ textAlign: 'center', padding: '50px' }}><Spin size="large" /></div>;
+  }
+
   return (
     <div className="orders-page">
       <h2 className="page-title">Đơn hàng đã mua</h2>
 
       <div className="orders-list">
-        {mockOrders.length === 0 ? (
+        {orders.length === 0 ? (
           <div className="empty-orders">Chưa có đơn hàng nào.</div>
         ) : (
-          mockOrders.map((order) => (
-            <div key={order.id} className="order-card">
-              <div className="order-header">
-                <span className="order-id">Mã đơn: <strong>{order.id}</strong></span>
-                <span className="order-date">{order.date}</span>
-                <Tag color={statusConfig[order.status]?.color} className="order-status">
-                  {statusConfig[order.status]?.label}
-                </Tag>
-              </div>
+          orders.map((order) => {
 
-              <Divider style={{ margin: '12px 0' }} />
+            const totalAmount = (order.tongTienHang || 0) + (order.phiShip || 0) - (order.giamGia || 0);
+            const currentStatusConfig = statusConfig[order.trangThai] || { label: order.trangThai, color: 'default' };
 
-              <div className="order-items">
-                {order.items.map((item) => (
-                  <div key={item.id} className="oi-row">
-                    <img src={item.image} alt={item.title} className="oi-img" />
-                    <div className="oi-info">
-                      <p className="oi-title">{item.title}</p>
-                      <p className="oi-qty">x{item.qty}</p>
+            return (
+              <div key={order.id} className="order-card">
+                <div className="order-header">
+                  <span className="order-id">Mã đơn: <strong>{order.maHoaDon}</strong></span>
+                  <span className="order-date">{formatDate(order.ngayTao)}</span>
+                  <Tag color={currentStatusConfig.color} className="order-status">
+                    {currentStatusConfig.label}
+                  </Tag>
+                </div>
+
+                <Divider style={{ margin: '12px 0' }} />
+
+                <div className="order-items">
+                  {order.sanPhams?.map((item) => (
+                    <div key={item.idSach} className="oi-row">
+                      <img src={item.hinhAnh} alt={item.tenSach} className="oi-img" />
+                      <div className="oi-info">
+                        <p className="oi-title">{item.tenSach}</p>
+                        <p className="oi-qty">x{item.soLuong}</p>
+                      </div>
+                      <div className="oi-price">
+                        {item.donGia?.toLocaleString('vi-VN')}₫
+                      </div>
                     </div>
-                    <div className="oi-price">
-                      {item.price.toLocaleString('vi-VN')}₫
-                    </div>
+                  ))}
+                </div>
+
+                <Divider style={{ margin: '12px 0' }} />
+
+                <div className="order-footer">
+                  <div className="order-total-box">
+                    <span className="ot-label">Thành tiền:</span>
+                    <span className="ot-value">{totalAmount.toLocaleString('vi-VN')}₫</span>
                   </div>
-                ))}
-              </div>
-
-              <Divider style={{ margin: '12px 0' }} />
-
-              <div className="order-footer">
-                <div className="order-total-box">
-                  <span className="ot-label">Thành tiền:</span>
-                  <span className="ot-value">{order.totalAmount.toLocaleString('vi-VN')}₫</span>
-                </div>
-                <div className="order-actions">
-                  <Link to={`/account/orders/${order.id}`}>
-                    <Button type="primary" ghost className="detail-order"><EyeFilled /> Chi tiết</Button>
-                  </Link>
+                  <div className="order-actions">
+                    <Link to={`/account/orders/${order.id}`}>
+                      <Button type="primary" ghost className="detail-order"><EyeFilled /> Chi tiết</Button>
+                    </Link>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            )
+          })
         )}
       </div>
     </div>

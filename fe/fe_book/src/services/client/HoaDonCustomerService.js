@@ -1,5 +1,5 @@
-import axiosClient from "./AxiosClient";
-import { handleError } from "./ErrorHandler";
+import axiosClient from "../AxiosClient";
+import { handleError } from "../ErrorHandler";
 
 const BASE = "/api/customer/v1/hoa-don";
 

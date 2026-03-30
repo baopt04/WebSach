@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Input, Button, message } from 'antd';
 import './PasswordPage.css';
+import { changePassword } from '../../services/client/ProfileCustomer';
 
 const PasswordPage = () => {
   const [loading, setLoading] = useState(false);
@@ -8,7 +9,7 @@ const PasswordPage = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!oldPassword || !newPassword || !confirmPassword) {
       message.error('Vui lòng nhập đầy đủ thông tin!');
       return;
@@ -18,15 +19,22 @@ const PasswordPage = () => {
       return;
     }
 
-    setLoading(true);
-    // Mock API call
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      setLoading(true);
+      await changePassword({
+        matKhauCu: oldPassword,
+        matKhauMoi: newPassword,
+        xacNhanMatKhauMoi: confirmPassword
+      });
       message.success('Đổi mật khẩu thành công!');
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
-    }, 1000);
+    } catch (error) {
+      message.error(error?.response?.data || error?.message || 'Đổi mật khẩu thất bại!');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

@@ -11,4 +11,5 @@ import java.util.List;
 public class HoaDonDetailResponse {
     private HoaDonResponse hoaDon;
     private List<HoaDonChiTietResponse> chiTiets;
+    private List<LichSuDonHangResponse> lichSuDonHang;
 }

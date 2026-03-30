@@ -55,7 +55,8 @@ public class SecurityConfig {
                     "/api/customer/v1/san-pham/**",
                     "/api/customer/v1/the-loai/**",
                     "/api/customer/v1/nha-xuat-ban/**",
-                    "/api/customer/v1/tac-gia/**"
+                    "/api/customer/v1/tac-gia/**",
+                    "/api/customer/v1/don-hang/search"
                 ).permitAll()
 
                 .requestMatchers("/api/admin/v1/**").hasAuthority("ROLE_ADMIN")

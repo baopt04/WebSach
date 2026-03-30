@@ -1,4 +1,4 @@
-package com.example.datn.service.impl.customer.impl;
+package com.example.datn.service.impl;
 
 import com.example.datn.dto.response.client.ClientNhaXuatBanResponse;
 import com.example.datn.dto.response.client.ClientSachDetailResponse;
@@ -12,7 +12,7 @@ import com.example.datn.repository.SachHinhAnhRepository;
 import com.example.datn.repository.SachRepository;
 import com.example.datn.repository.SachTacGiaRepository;
 import com.example.datn.repository.TheLoaiRepository;
-import com.example.datn.service.impl.customer.ClientSanPhamService;
+import com.example.datn.service.CustomerSanPhamService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class ClientSanPhamServiceImpl implements ClientSanPhamService {
+public class CustomerSanPhamServiceImpl implements CustomerSanPhamService {
 
     private final SachRepository sachRepository;
     private final SachTacGiaRepository sachTacGiaRepository;

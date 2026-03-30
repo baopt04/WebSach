@@ -10,6 +10,7 @@ import com.example.datn.service.EmailService;
 import com.example.datn.service.TaiKhoanService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -25,6 +26,7 @@ public class TaiKhoanServiceImpl implements TaiKhoanService {
 
     private final TaiKhoanRepository taiKhoanRepository;
     private final EmailService emailService;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public List<TaiKhoanSummaryResponse> getAll() {
@@ -57,7 +59,7 @@ public class TaiKhoanServiceImpl implements TaiKhoanService {
         TaiKhoan taiKhoan = TaiKhoan.builder()
                 .maTaiKhoan(generatedMaTaiKhoan)
                 .email(request.getEmail())
-                .matKhau(generatedPassword) // Luôn được lưu vào db
+                .matKhau(passwordEncoder.encode(generatedPassword)) // Lưu mật khẩu đã BCrypt
                 .hoTen(request.getHoTen())
                 .soDienThoai(request.getSoDienThoai())
                 .vaiTro(request.getVaiTro())

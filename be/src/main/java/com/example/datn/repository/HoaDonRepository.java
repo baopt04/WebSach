@@ -19,4 +19,8 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
 
     @Query("SELECT h FROM HoaDon h WHERE h.ngayTao >= :tuNgay AND h.ngayTao <= :denNgay ORDER BY h.ngayCapNhat DESC")
     List<HoaDon> findByNgayTaoBetween(@Param("tuNgay") LocalDateTime tuNgay, @Param("denNgay") LocalDateTime denNgay);
+
+    List<HoaDon> findByKhachHangIdOrderByNgayCapNhatDesc(Integer idKhachHang);
+
+    java.util.Optional<HoaDon> findBySoDienThoaiAndMaHoaDon(String soDienThoai, String maHoaDon);
 }

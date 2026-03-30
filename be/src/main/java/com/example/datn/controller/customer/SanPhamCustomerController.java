@@ -3,7 +3,7 @@ package com.example.datn.controller.customer;
 import com.example.datn.dto.response.client.ClientNhaXuatBanResponse;
 import com.example.datn.dto.response.client.ClientSanPhamResponse;
 import com.example.datn.dto.response.client.ClientTheLoaiResponse;
-import com.example.datn.service.impl.customer.ClientSanPhamService;
+import com.example.datn.service.CustomerSanPhamService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,7 +15,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SanPhamCustomerController {
 
-    private final ClientSanPhamService clientSanPhamService;
+    private final CustomerSanPhamService clientSanPhamService;
 
     @GetMapping
     public ResponseEntity<List<ClientSanPhamResponse>> getAllSanPham() {

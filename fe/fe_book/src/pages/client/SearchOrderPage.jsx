@@ -8,53 +8,43 @@ import {
   FileDoneOutlined,
   InboxOutlined,
   CarOutlined,
-  CheckCircleOutlined
+  CheckCircleOutlined,
+  CreditCardFilled,
+  CloseCircleOutlined
 } from '@ant-design/icons';
+import { getMySearchOrder } from '../../services/client/ProfileCustomer';
+import { formatDate } from '../../utils/format';
 import './SearchOrderPage.css';
 
-const mockOrderDetails = {
-  id: 'HD881712',
-  date: '23-12-2023 16:37:35',
-  status: 'shipping',
-  customerInfo: {
-    name: 'Nguyễn Văn Khánh',
-    phone: '0987 654 321',
-    address: '123 Đường ABC, Phường XYZ, Quận 1, TP.HCM',
-    note: 'Giao trong giờ hành chính',
-  },
-  paymentType: 'Tiền mặt (COD)',
-  items: [
-    {
-      id: 1,
-      title: 'Đắc Nhân Tâm – How to Win Friends and Influence People',
-      image: 'https://picsum.photos/seed/book1/80/110',
-      price: 89000,
-      qty: 1,
-    },
-    {
-      id: 2,
-      title: 'Nhà Giả Kim (Tái Bản 2023)',
-      image: 'https://picsum.photos/seed/book2/80/110',
-      price: 125000,
-      qty: 2,
-    },
-  ],
-  subtotal: 339000,
-  shippingFee: 0,
-  discount: 20000,
-  totalAmount: 319000,
+const stepConfig = {
+  TAO_HOA_DON: { title: 'Tạo đơn', icon: <FormOutlined /> },
+  DA_XAC_NHAN: { title: 'Đã xác nhận', icon: <FileDoneOutlined /> },
+  DANG_CHUAN_BI_HANG: { title: 'Chuẩn bị hàng', icon: <InboxOutlined /> },
+  DANG_GIAO: { title: 'Đang giao', icon: <CarOutlined /> },
+  DA_THANH_TOAN: { title: 'Đã thanh toán', icon: <CreditCardFilled /> },
+  THANH_CONG: { title: 'Thành công', icon: <CheckCircleOutlined /> },
+  DA_HUY: { title: 'Đã hủy', icon: <CloseCircleOutlined /> },
 };
 
-const getStepCurrent = (status) => {
-  switch (status) {
-    case 'pending': return 0;
-    case 'confirmed': return 1;
-    case 'waiting_shipping': return 2;
-    case 'shipping': return 3;
-    case 'completed': return 4;
-    case 'cancelled': return 0;
-    default: return 0;
-  }
+const buildSteps = (lichSu = []) => {
+  return lichSu
+    .slice()
+    .sort((a, b) => new Date(a.ngayTao) - new Date(b.ngayTao))
+    .map(item => ({
+      title: stepConfig[item.trangThai]?.title || item.trangThai,
+      description: formatDate(item.ngayTao),
+      icon: stepConfig[item.trangThai]?.icon,
+    }));
+};
+
+const statusConfig = {
+  CHO_XAC_NHAN: { label: 'Chờ xác nhận', color: 'orange', text: 'Chờ xác nhận' },
+  DA_XAC_NHAN: { label: 'Đã xác nhận', color: 'blue', text: 'Đã xác nhận' },
+  DANG_CHUAN_BI_HANG: { label: 'Đang chuẩn bị hàng', color: 'cyan', text: 'Đang chuẩn bị hàng' },
+  DANG_GIAO: { label: 'Đang giao', color: 'green', text: 'Đang giao' },
+  DA_THANH_TOAN: { label: 'Đã thanh toán', color: 'red', text: 'Đã thanh toán' },
+  THANH_CONG: { label: 'Thành công', color: 'blue', text: 'Thành công' },
+  DA_HUY: { label: 'Đã hủy', color: 'red', text: 'Đã hủy' },
 };
 
 const SearchOrderPage = () => {
@@ -63,22 +53,36 @@ const SearchOrderPage = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (!phone || !orderId) {
       message.error('Vui lòng nhập Số điện thoại và Mã đơn hàng');
       return;
     }
+
+    const phoneRegex = /(84|0[3|5|7|8|9])+([0-9]{8})\b/;
+    if (!phoneRegex.test(phone)) {
+      message.error('Số điện thoại không đúng định dạng');
+      return;
+    }
+
     setLoading(true);
-    // Mock API delay
-    setTimeout(() => {
-      setLoading(false);
-      // Giả lập tìm thấy đơn
-      if (orderId === 'HD881712' || orderId === '1') {
-        setOrder(mockOrderDetails);
+    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    try {
+      await delay(1000);
+      const res = await getMySearchOrder(phone, orderId);
+      if (res && res.hoaDon) {
+        setOrder(res);
       } else {
-        message.error('Không tìm thấy đơn hàng nào khớp với thông tin trên');
+        message.warning('Không tìm thấy đơn hàng nào khớp với thông tin trên');
+        setOrder(null);
       }
-    }, 1000);
+    } catch (error) {
+      console.error("Search order error:", error);
+      message.error(error?.response?.data?.message || 'Không tìm thấy đơn hàng hoặc có lỗi xảy ra');
+      setOrder(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const resetSearch = () => {
@@ -99,21 +103,21 @@ const SearchOrderPage = () => {
       key: 'product',
       render: (_, record) => (
         <div className="table-product">
-          <img src={record.image} alt={record.title} className="tp-img" />
-          <span className="tp-title">{record.title}</span>
+          <img src={record.hinhAnh} alt={record.tenSach} className="tp-img" />
+          <span className="tp-title">{record.tenSach}</span>
         </div>
       ),
     },
     {
       title: 'Đơn giá',
-      dataIndex: 'price',
-      key: 'price',
-      render: (price) => `${price.toLocaleString('vi-VN')}₫`,
+      dataIndex: 'donGia',
+      key: 'donGia',
+      render: (price) => `${price?.toLocaleString('vi-VN')}₫`,
     },
     {
       title: 'Số lượng',
-      dataIndex: 'qty',
-      key: 'qty',
+      dataIndex: 'soLuong',
+      key: 'soLuong',
       align: 'center',
     },
     {
@@ -122,14 +126,24 @@ const SearchOrderPage = () => {
       align: 'right',
       render: (_, record) => (
         <strong className="tp-total">
-          {(record.price * record.qty).toLocaleString('vi-VN')}₫
+          {((record.donGia || 0) * (record.soLuong || 0)).toLocaleString('vi-VN')}₫
         </strong>
       ),
     },
   ];
 
   if (order) {
-    const currentStep = getStepCurrent(order.status);
+    const { hoaDon, chiTiets } = order;
+    const currentStatusConfig = statusConfig[hoaDon.trangThai] || { label: hoaDon.trangThai, color: 'default', text: hoaDon.trangThai };
+    const currentStep = order.lichSuDonHang?.length
+      ? order.lichSuDonHang.length - 1
+      : 0;
+
+    const subtotal = hoaDon.tongTienHang || 0;
+    const shippingFee = hoaDon.phiShip || 0;
+    const discount = hoaDon.giamGia || 0;
+    const totalAmount = subtotal + shippingFee - discount;
+
     return (
       <div className="search-order-page detail-view">
         <Breadcrumb
@@ -146,10 +160,10 @@ const SearchOrderPage = () => {
             Tra cứu đơn khác
           </Button>
           <div className="od-id-status">
-            <span className="od-id">Mã đơn hàng: <strong>{order.id}</strong></span>
+            <span className="od-id">Mã đơn hàng: <strong>{hoaDon.maHoaDon}</strong></span>
             <span className="od-split">|</span>
-            <span className="od-status-text">
-              {order.status === 'shipping' ? 'Đang vận chuyển' : 'TRẠNG THÁI'}
+            <span className="od-status-text" style={{ color: currentStatusConfig.color === 'default' ? 'inherit' : currentStatusConfig.color }}>
+              {currentStatusConfig.text.toUpperCase()}
             </span>
           </div>
         </div>
@@ -158,37 +172,30 @@ const SearchOrderPage = () => {
           <Steps
             current={currentStep}
             labelPlacement="vertical"
-            className="custom-order-steps"
-            items={[
-              { title: 'Chờ xác nhận', description: order.date, icon: <FormOutlined /> },
-              { title: 'Đã xác nhận', icon: <FileDoneOutlined /> },
-              { title: 'Chờ vận chuyển', icon: <InboxOutlined /> },
-              { title: 'Đang giao hàng', icon: <CarOutlined /> },
-              { title: 'Thành công', icon: <CheckCircleOutlined /> },
-            ]}
+            items={buildSteps(order.lichSuDonHang)}
           />
         </div>
 
         <div className="od-section od-info-grid">
           <div className="od-info-box">
             <h3>Thông tin người nhận</h3>
-            <p><strong>{order.customerInfo.name}</strong></p>
-            <p>SĐT: {order.customerInfo.phone}</p>
-            <p>{order.customerInfo.address}</p>
+            <p><strong>{hoaDon.hoTenKhachHang}</strong></p>
+            <p>SĐT: {hoaDon.soDienThoai}</p>
+            <p>{hoaDon.diaChiGiaoHang}</p>
           </div>
           <div className="od-info-box">
-            <h3>Hình thức thanh toán & Ghi chú</h3>
-            <p>Phương thức: {order.paymentType}</p>
-            <p>Ghi chú: {order.customerInfo.note || 'Không có'}</p>
+            <h3 style={{ marginBottom: '10px' }}>Hình thức thanh toán & Ghi chú</h3>
+            <p>Phương thức: {hoaDon.phuongThuc === 'TIEN_MAT' ? 'Tiền mặt' : hoaDon.phuongThuc === 'CHUYEN_KHOAN' ? 'Chuyển khoản' : 'Không xác định'}</p>
+            <p>Ghi chú: {hoaDon.ghiChu || 'Không có'}</p>
           </div>
         </div>
 
         <div className="od-section od-products">
           <h3>Chi tiết sản phẩm</h3>
           <Table
-            dataSource={order.items}
+            dataSource={chiTiets}
             columns={columns}
-            rowKey="id"
+            rowKey="idSach"
             pagination={false}
             bordered
           />
@@ -197,20 +204,20 @@ const SearchOrderPage = () => {
         <div className="od-summary">
           <div className="ods-row">
             <span>Tổng tiền hàng:</span>
-            <span>{order.subtotal.toLocaleString('vi-VN')}₫</span>
+            <span>{subtotal.toLocaleString('vi-VN')}₫</span>
           </div>
           <div className="ods-row">
             <span>Phí vận chuyển:</span>
-            <span>{order.shippingFee.toLocaleString('vi-VN')}₫</span>
+            <span>{shippingFee.toLocaleString('vi-VN')}₫</span>
           </div>
           <div className="ods-row">
             <span>Voucher giảm giá:</span>
-            <span>-{order.discount.toLocaleString('vi-VN')}₫</span>
+            <span>-{discount.toLocaleString('vi-VN')}₫</span>
           </div>
           <Divider style={{ margin: '12px 0' }} />
           <div className="ods-row ods-total">
             <span>Tổng thanh toán:</span>
-            <span className="ods-total-price">{order.totalAmount.toLocaleString('vi-VN')}₫</span>
+            <span className="ods-total-price">{totalAmount.toLocaleString('vi-VN')}₫</span>
           </div>
         </div>
       </div>
