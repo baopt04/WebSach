@@ -26,6 +26,10 @@ public class SachController {
     public SachResponse add(@Valid @RequestBody SachRequest request) {
         return sachService.add(request);
     }
+    @GetMapping("/{id}")
+    public SachResponse detail(@PathVariable Integer id) {
+        return sachService.detail(id);
+    }
 
     @PutMapping("/{id}")
     public SachResponse update(@PathVariable Integer id,
@@ -38,4 +42,14 @@ public class SachController {
         sachService.hidden(id);
         return "Ẩn sách thành công";
     }
+    @GetMapping("/search")
+    public List<SachResponse> search(@RequestParam String keyword) {
+        return sachService.search(keyword);
+    }
+
+    @GetMapping("/the-loai/{idTheLoai}")
+    public List<SachResponse> findByTheLoai(@PathVariable Integer idTheLoai) {
+        return sachService.findByTheLoai(idTheLoai);
+    }
+
 }

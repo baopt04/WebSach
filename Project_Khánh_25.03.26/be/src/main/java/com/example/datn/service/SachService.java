@@ -17,4 +17,10 @@ public interface SachService {
     SachResponse update(Integer id, SachRequest request);
 
     void hidden(Integer id);
+
+    SachResponse detail(Integer id);
+
+    List<SachResponse> search(String keyword);
+
+    List<SachResponse> findByTheLoai(Integer idTheLoai);
 }

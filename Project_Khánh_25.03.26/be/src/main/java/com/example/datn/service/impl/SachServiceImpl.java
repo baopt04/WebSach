@@ -25,6 +25,13 @@ public class SachServiceImpl implements SachService {
     public List<SachResponse> getAll() {
         return sachRepository.findAll().stream().map(this::mapToResponse).toList();
     }
+    @Override
+    public SachResponse detail(Integer id) {
+        Sach sach = sachRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy sách"));
+
+        return mapToResponse(sach);
+    }
 
     @Override
     public SachResponse add(SachRequest request) {
@@ -106,6 +113,23 @@ public class SachServiceImpl implements SachService {
         sach.setTrangThai(false);
 
         sachRepository.save(sach);
+    }
+
+
+    @Override
+    public List<SachResponse> search(String keyword) {
+        return sachRepository.findByTenSachContainingIgnoreCase(keyword)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Override
+    public List<SachResponse> findByTheLoai(Integer idTheLoai) {
+        return sachRepository.findByTheLoai_Id(idTheLoai)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
     }
 
     private SachResponse mapToResponse(Sach sach) {

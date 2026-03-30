@@ -4,10 +4,13 @@ import com.example.datn.entity.Sach;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 @Repository
 public interface SachRepository extends JpaRepository<Sach, Integer> {
 
-
     Optional<Sach> findByMaSach(String maSach);
+    List<Sach> findByTenSachContainingIgnoreCase(String keyword);
+
+    List<Sach> findByTheLoai_Id(Integer idTheLoai);
 }

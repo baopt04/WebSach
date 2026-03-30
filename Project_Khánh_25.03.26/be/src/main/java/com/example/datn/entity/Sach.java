@@ -50,12 +50,12 @@ public class Sach {
     @Column(name = "mo_ta", columnDefinition = "NVARCHAR(MAX)")
     private String moTa;
 
-    // FK → TheLoai
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_the_loai", referencedColumnName = "id")
     private TheLoai theLoai;
 
-    // FK → NhaXuatBan
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_nxb", referencedColumnName = "id")
     private NhaXuatBan nhaXuatBan;
