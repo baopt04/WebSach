@@ -8,6 +8,7 @@ import {
   CloseOutlined,
 } from '@ant-design/icons';
 import { Link, useLocation } from 'react-router-dom';
+import { useCart } from '../../context/CartContext';
 import './ClientHeader.css';
 
 const navItems = [
@@ -22,7 +23,7 @@ const ClientHeader = () => {
   const location = useLocation();
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const cartCount = 3; // demo
+  const { cartCount } = useCart();
 
   return (
     <header className="client-header">

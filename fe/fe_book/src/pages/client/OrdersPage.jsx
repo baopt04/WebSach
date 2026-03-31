@@ -7,12 +7,13 @@ import { formatDate } from '../../utils/format';
 import './OrdersPage.css';
 
 const statusConfig = {
-  CHO_XAC_NHAN: { label: 'Chờ xác nhận', color: 'orange' },
-  CHO_GIAO_HANG: { label: 'Chờ giao hàng', color: 'blue' },
-  DANG_GIAO: { label: 'Đang giao hàng', color: 'cyan' },
-  THANH_CONG: { label: 'Thành công', color: 'green' },
-  DA_HUY: { label: 'Đã hủy', color: 'red' },
-  HOAN_TRA: { label: 'Hoàn trả', color: 'purple' }
+  CHO_XAC_NHAN: { label: 'Chờ xác nhận', color: 'gold' },
+  DA_XAC_NHAN: { label: 'Đã xác nhận', color: 'blue' },
+  DANG_CHUAN_BI_HANG: { label: 'Đang chuẩn bị hàng', color: 'processing' },
+  DANG_GIAO: { label: 'Đang giao', color: 'cyan' },
+  DA_THANH_TOAN: { label: 'Đã thanh toán', color: 'purple' },
+  THANH_CONG: { label: 'Thành công', color: 'success' },
+  DA_HUY: { label: 'Đã hủy', color: 'error' }
 };
 
 const OrdersPage = () => {
@@ -48,7 +49,6 @@ const OrdersPage = () => {
           <div className="empty-orders">Chưa có đơn hàng nào.</div>
         ) : (
           orders.map((order) => {
-
             const totalAmount = (order.tongTienHang || 0) + (order.phiShip || 0) - (order.giamGia || 0);
             const currentStatusConfig = statusConfig[order.trangThai] || { label: order.trangThai, color: 'default' };
 

@@ -17,7 +17,6 @@ public class GioHang {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_gio_hang")
     private Integer id;
 
     @ManyToOne

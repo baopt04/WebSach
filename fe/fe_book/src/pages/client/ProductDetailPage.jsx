@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { getChiTietSanPham } from '../../services/client/SanPhamCustomer';
-import { Rate, InputNumber, Tabs, Tag, Breadcrumb } from 'antd';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { getChiTietSanPham, validateSoLuongSanPham } from '../../services/client/SanPhamCustomer';
+import { addCartItem } from '../../services/client/CartCustomerService';
+import { Rate, InputNumber, Tabs, Tag, Breadcrumb, message } from 'antd';
 import {
   ShoppingCartOutlined,
   ThunderboltOutlined,
@@ -46,8 +47,44 @@ const ImageGallery = ({ images }) => {
 
 const ProductInfo = ({ product }) => {
   const [qty, setQty] = useState(1);
+  const navigate = useNavigate();
   const hasDiscount = product.originalPrice && product.originalPrice > product.price;
   const discount = hasDiscount ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : 0;
+
+  const handleAddToCart = async () => {
+    const isLoggedIn = !!localStorage.getItem('token');
+
+    if (isLoggedIn) {
+      try {
+        await validateSoLuongSanPham(product.id, qty);
+        await addCartItem({ idSach: product.id, soLuong: qty });
+        message.success("Thêm vào giỏ hàng thành công!");
+        navigate('/cart');
+      } catch (error) {
+        console.error(error);
+        message.error(error.response?.data?.message || error.message || "Lỗi khi thêm vào giỏ hàng");
+      }
+    } else {
+      // Guest: lưu vào localStorage
+      const guestCart = JSON.parse(localStorage.getItem('guestCart') || '[]');
+      const existing = guestCart.find(item => item.idSach === product.id);
+      if (existing) {
+        existing.soLuong += qty;
+      } else {
+        guestCart.push({
+          idSach: product.id,
+          idGioHangChiTiet: `guest_${product.id}`,
+          tenSach: product.title,
+          hinhAnh: product.images?.[0] || '',
+          giaBan: product.price,
+          soLuong: qty,
+        });
+      }
+      localStorage.setItem('guestCart', JSON.stringify(guestCart));
+      message.success("Thêm vào giỏ hàng thành công!");
+      navigate('/cart');
+    }
+  };
 
   return (
     <div className="detail-info">
@@ -88,7 +125,6 @@ const ProductInfo = ({ product }) => {
         <span className="qty-label">Số lượng:</span>
         <InputNumber
           min={1}
-          max={product.stock}
           value={qty}
           onChange={setQty}
           className="qty-input"
@@ -101,7 +137,7 @@ const ProductInfo = ({ product }) => {
         <button className="btn-buy-now-detail">
           Mua Ngay
         </button>
-        <button className="btn-add-cart">
+        <button className="btn-add-cart" onClick={handleAddToCart}>
           <ShoppingCartOutlined /> Thêm Vào Giỏ
         </button>
       </div>

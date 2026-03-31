@@ -8,6 +8,7 @@ import com.example.datn.dto.response.HoaDonChiTietResponse;
 import com.example.datn.dto.response.HoaDonDetailResponse;
 import com.example.datn.dto.response.HoaDonResponse;
 import com.example.datn.dto.response.LichSuDonHangResponse;
+import com.example.datn.entity.GioHang;
 import com.example.datn.entity.HoaDon;
 import com.example.datn.entity.HoaDonChiTiet;
 import com.example.datn.entity.LichSuDonHang;
@@ -18,6 +19,8 @@ import com.example.datn.entity.SachHinhAnh;
 import com.example.datn.entity.TaiKhoan;
 import com.example.datn.enums.OrderStatus;
 import com.example.datn.enums.TypeBill;
+import com.example.datn.repository.GioHangChiTietRepository;
+import com.example.datn.repository.GioHangRepository;
 import com.example.datn.repository.HoaDonChiTietRepository;
 import com.example.datn.repository.HoaDonRepository;
 import com.example.datn.repository.LichSuDonHangRepository;
@@ -27,6 +30,7 @@ import com.example.datn.repository.SachHinhAnhRepository;
 import com.example.datn.repository.SachRepository;
 import com.example.datn.repository.TaiKhoanRepository;
 import com.example.datn.service.HoaDonService;
+import com.example.datn.enums.PaymentMethod;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -49,6 +53,9 @@ public class HoaDonServiceImpl implements HoaDonService {
     private final SachHinhAnhRepository sachHinhAnhRepository;
     private final MaGiamGiaRepository maGiamGiaRepository;
     private final MaGiamGiaChiTietRepository maGiamGiaChiTietRepository;
+    private final GioHangRepository gioHangRepository;
+    private final GioHangChiTietRepository gioHangChiTietRepository;
+
     @Override
     public List<HoaDonResponse> getAllHoaDon() {
         List<HoaDon> hoaDons = hoaDonRepository.findAllByOrderByNgayCapNhatDesc();
@@ -288,6 +295,11 @@ public class HoaDonServiceImpl implements HoaDonService {
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
         }
 
+        OrderStatus initialStatus = OrderStatus.CHO_XAC_NHAN;
+        if (request.getPaymentMethod() == PaymentMethod.CHUYEN_KHOAN) {
+            initialStatus = OrderStatus.DA_XAC_NHAN;
+        }
+
         HoaDon hoaDon = HoaDon.builder()
                 .khachHang(khachHang)
                 .hoTen(request.getHoTen())
@@ -297,7 +309,7 @@ public class HoaDonServiceImpl implements HoaDonService {
                 .phiShip(request.getPhiShip() != null ? request.getPhiShip() : BigDecimal.ZERO)
                 .tongTienHang(tongTienHang)
                 .ghiChu(request.getGhiChu())
-                .trangThai(OrderStatus.CHO_XAC_NHAN)
+                .trangThai(initialStatus)
                 .phuongThuc(request.getPaymentMethod())
                 .loaiHoaDon(TypeBill.ONLINE)
                 .ngayTao(LocalDateTime.now())
@@ -340,33 +352,62 @@ public class HoaDonServiceImpl implements HoaDonService {
         if (request.getChiTiets() != null) {
             for (HoaDonChiTietRequest ctReq : request.getChiTiets()) {
                 Sach sach = sachRepository.findById(ctReq.getIdSach()).orElse(null);
+                
+                // Nếu thanh toán VNPay thì trừ luôn tồn kho
+                if (sach != null && initialStatus == OrderStatus.DA_XAC_NHAN) {
+                    int soLuongMoi = sach.getSoLuong() - ctReq.getSoLuong();
+                    if (soLuongMoi < 0) soLuongMoi = 0;
+                    sach.setSoLuong(soLuongMoi);
+                    sachRepository.save(sach);
+                }
+
                 HoaDonChiTiet chiTiet = HoaDonChiTiet.builder()
                         .hoaDon(hoaDon)
                         .sach(sach)
                         .soLuong(ctReq.getSoLuong())
                         .donGia(ctReq.getDonGia())
-                        .trangThai(OrderStatus.CHO_XAC_NHAN)
+                        .trangThai(initialStatus)
                         .ngayTao(LocalDateTime.now())
                         .ngayCapNhat(LocalDateTime.now())
                         .build();
                 hoaDonChiTietRepository.save(chiTiet);
+            }
+
+            // Xóa các sản phẩm đã mua khỏi giỏ hàng chi tiết của khách hàng
+            if (khachHang != null) {
+                GioHang gioHang = gioHangRepository.findByKhachHangId(khachHang.getId()).orElse(null);
+                if (gioHang != null) {
+                    for (HoaDonChiTietRequest ctReq : request.getChiTiets()) {
+                        gioHangChiTietRepository
+                                .findByGioHangIdAndSachId(gioHang.getId(), ctReq.getIdSach())
+                                .ifPresent(gioHangChiTietRepository::delete);
+                    }
+                }
             }
         }
 
         LichSuDonHang lichSu = LichSuDonHang.builder()
                 .taiKhoan(khachHang)
                 .hoaDon(hoaDon)
-                .trangThai(OrderStatus.CHO_XAC_NHAN)
-                .ghiChu("Khách hàng tạo đơn hàng trực tuyến")
+                .trangThai(initialStatus)
+                .ghiChu(initialStatus == OrderStatus.DA_XAC_NHAN ? "Khách hàng tạo đơn và chọn thanh toán VNPay" : "Khách hàng tạo đơn hàng trực tuyến")
                 .ngayTao(LocalDateTime.now())
                 .build();
         lichSuDonHangRepository.save(lichSu);
+
+        String vnpayUrl = null;
+        if (request.getPaymentMethod() == PaymentMethod.CHUYEN_KHOAN) {
+            BigDecimal amountToPay = tongTienHang.subtract(giamGia).add(request.getPhiShip() != null ? request.getPhiShip() : BigDecimal.ZERO);
+            if (amountToPay.compareTo(BigDecimal.ZERO) < 0) amountToPay = BigDecimal.ZERO;
+//            vnpayUrl = vnPayUtil.createPaymentUrl(hoaDon.getMaHoaDon(), amountToPay, "ThanhToanDonHang_" + hoaDon.getMaHoaDon(), "127.0.0.1");
+        }
 
         return HoaDonResponse.builder()
                 .id(hoaDon.getId())
                 .maHoaDon(hoaDon.getMaHoaDon())
                 .hoTenKhachHang(hoaDon.getHoTen())
                 .trangThai(hoaDon.getTrangThai())
+                .vnpayUrl(vnpayUrl)
                 .build();
     }
 

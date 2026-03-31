@@ -43,7 +43,12 @@ public class SecurityConfig {
 
             // Phân quyền cho các role
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/auth/**" ).permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/customer/v1/hoa-don/tao-don").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/customer/v1/ma-giam-gia/hop-le").permitAll()
+                    .requestMatchers(HttpMethod.PUT, "/api/admin/v1/hoa-don/cap-nhat-don-hang/**").permitAll()
+                    .requestMatchers("/api/payment/**").permitAll()
+
                 .requestMatchers(
                     "/swagger-ui/**",
                     "/swagger-ui.html",

@@ -14,6 +14,7 @@ import OrderDetailPage from '../pages/client/OrderDetailPage';
 import ProfilePage from '../pages/client/ProfilePage';
 import PasswordPage from '../pages/client/PasswordPage';
 import SearchOrderPage from '../pages/client/SearchOrderPage';
+import OrderSuccessPage from '../pages/client/OrderSuccessPage';
 
 // Admin pages
 import DashboardPage from '../pages/admin/DashboardPage';
@@ -39,6 +40,7 @@ const router = createBrowserRouter([
       { path: 'cart', element: <CartPage /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'order-tracking', element: <SearchOrderPage /> },
+      { path: 'order-success', element: <OrderSuccessPage /> },
       {
         path: 'account',
         element: <AccountLayout />,

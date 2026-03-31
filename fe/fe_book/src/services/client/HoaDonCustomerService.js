@@ -25,3 +25,13 @@ export const cancelHoaDon = async (id, data) => {
         throw handleError(error);
     }
 };
+
+export const updateHoaDonInfo = async (id, data) => {
+    try {
+        if (!id) throw new Error("ID không hợp lệ");
+        const res = await axiosClient.put(`/api/admin/v1/hoa-don/cap-nhat-don-hang/${id}`, data);
+        return res.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};

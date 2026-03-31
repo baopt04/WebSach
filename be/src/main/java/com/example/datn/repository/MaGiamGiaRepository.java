@@ -17,4 +17,7 @@ public interface MaGiamGiaRepository extends JpaRepository<MaGiamGia, Integer> {
     boolean existsByTenMaGiamGiaAndIdNot(String tenMaGiamGia, Integer id);
 
     List<MaGiamGia> findAllByOrderByNgayCapNhatDesc();
+
+    @Query("SELECT m FROM MaGiamGia m WHERE m.trangThai = true AND m.soLuong > 0 AND m.tienToiThieu <= :tongTien AND m.ngayKetThuc >= CURRENT_DATE")
+    List<MaGiamGia> findVouchersForCustomer(@Param("tongTien") java.math.BigDecimal tongTien);
 }

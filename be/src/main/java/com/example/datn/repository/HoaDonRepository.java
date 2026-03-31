@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
     List<HoaDon> findAllByOrderByNgayCapNhatDesc();
@@ -23,4 +24,7 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
     List<HoaDon> findByKhachHangIdOrderByNgayCapNhatDesc(Integer idKhachHang);
 
     java.util.Optional<HoaDon> findBySoDienThoaiAndMaHoaDon(String soDienThoai, String maHoaDon);
+
+    Optional<HoaDon> findByMaHoaDon(String maHoaDon);
 }
+

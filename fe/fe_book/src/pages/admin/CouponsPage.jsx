@@ -207,6 +207,13 @@ const CouponsPage = () => {
       key: 'minOrder',
       render: (v) => `${v.toLocaleString('vi-VN')}₫`,
     },
+    {
+      title: 'Số lượng',
+      dataIndex: 'maxUsage',
+      key: 'maxUsage',
+
+
+    },
     { title: 'Từ ngày', dataIndex: 'fromDate', key: 'fromDate', render: (v) => formatDate(v) },
     { title: 'Đến ngày', dataIndex: 'toDate', key: 'toDate', render: (v) => formatDate(v) },
 

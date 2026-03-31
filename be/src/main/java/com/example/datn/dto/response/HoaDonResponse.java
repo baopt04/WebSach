@@ -7,6 +7,7 @@ import com.example.datn.enums.TypeBill;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Getter
@@ -26,9 +27,12 @@ public class HoaDonResponse {
     private BigDecimal giamGia;
     private OrderStatus trangThai;
     private PaymentMethod phuongThuc;
+    private LocalDate ngayNhan;
 //    private PaymentStatus thanhToan;
     private TypeBill loaiHoaDon;
     private String ghiChu;
     private LocalDateTime ngayTao;
     private LocalDateTime ngayCapNhat;
+    private String vnpayUrl; // chỉ có giá trị khi paymentMethod = CHUYEN_KHOAN
 }
+

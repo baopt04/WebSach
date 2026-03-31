@@ -211,6 +211,7 @@ public class CustomerServiceImpl implements CustomerService {
                 .phiShip(hoaDon.getPhiShip())
                 .giamGia(hoaDon.getGiamGia())
                 .trangThai(hoaDon.getTrangThai())
+                .ngayNhan(hoaDon.getNgayNhan())
                 .phuongThuc(hoaDon.getPhuongThuc())
                 .loaiHoaDon(hoaDon.getLoaiHoaDon())
                 .ghiChu(hoaDon.getGhiChu())
