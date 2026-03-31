@@ -16,7 +16,6 @@ import PasswordPage from '../pages/client/PasswordPage';
 import SearchOrderPage from '../pages/client/SearchOrderPage';
 import OrderSuccessPage from '../pages/client/OrderSuccessPage';
 
-// Admin pages
 import DashboardPage from '../pages/admin/DashboardPage';
 import AdminProductsPage from '../pages/admin/ProductsPage';
 import CouponsPage from '../pages/admin/CouponsPage';
@@ -29,7 +28,6 @@ import POSPage from '../pages/admin/POSPage';
 import OrderDetailAdmin from '../pages/admin/OrderDetailAdmin';
 
 const router = createBrowserRouter([
-  // ===== CLIENT =====
   {
     path: '/',
     element: <ClientLayout />,
@@ -55,7 +53,6 @@ const router = createBrowserRouter([
     ],
   },
 
-  // ===== ADMIN =====
   {
     path: '/admin',
     element: <AdminLayout />,

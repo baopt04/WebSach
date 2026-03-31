@@ -1,5 +1,6 @@
 package com.example.datn.service.impl;
 
+
 import com.example.datn.dto.request.HoaDonChiTietRequest;
 import com.example.datn.dto.request.HoaDonCreateRequest;
 import com.example.datn.dto.request.HoaDonUpdateRequest;
@@ -465,4 +466,5 @@ public class HoaDonServiceImpl implements HoaDonService {
         return hoaDonRepository.findByNgayTaoBetween(start, end)
                 .stream().map(this::mapToResponse).collect(Collectors.toList());
     }
+
 }

@@ -1,5 +1,6 @@
 package com.example.datn.service;
 
+
 import com.example.datn.dto.request.HoaDonCreateRequest;
 import com.example.datn.dto.request.HoaDonUpdateRequest;
 import com.example.datn.dto.request.TrangThaiHoaDonRequest;
@@ -20,4 +21,5 @@ public interface HoaDonService {
     String clientCancelOrder(Integer idHoaDon, TrangThaiHoaDonRequest request);
     List<HoaDonResponse> searchHoaDonByKeyword(String keyword);
     List<HoaDonResponse> searchHoaDonByDateRange(LocalDate tuNgay, LocalDate denNgay);
+
 }

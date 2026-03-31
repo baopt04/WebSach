@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
+
 @RequestMapping("/api/admin/v1/ma-giam-gia")
+
 @RequiredArgsConstructor
 public class MaGiamGiaController {
 

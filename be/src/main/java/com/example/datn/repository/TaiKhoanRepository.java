@@ -27,4 +27,5 @@ public interface TaiKhoanRepository extends JpaRepository<TaiKhoan, Integer> {
     List<TaiKhoan> searchByKeyword(@Param("keyword") String keyword);
 
     List<TaiKhoan> findAllByOrderByNgayCapNhatDesc();
+
 }

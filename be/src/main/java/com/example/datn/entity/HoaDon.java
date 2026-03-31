@@ -64,9 +64,6 @@ public class HoaDon {
     @Column(name = "phuong_thuc")
     private PaymentMethod phuongThuc = PaymentMethod.TIEN_MAT;
 
-//    @Enumerated(EnumType.STRING)
-//    @Column(name = "thanh_toan")
-//    private PaymentStatus thanhToan = PaymentStatus.CHUA_THANH_TOAN;
     @Enumerated(EnumType.STRING)
     @Column(name = "loai_hoa_don")
     private TypeBill loaiHoaDon = TypeBill.OFFLINE;
@@ -91,4 +88,5 @@ public class HoaDon {
 
     @Column(name = "ngay_cap_nhat")
     private LocalDateTime ngayCapNhat;
+
 }

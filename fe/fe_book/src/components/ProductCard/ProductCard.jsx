@@ -5,7 +5,7 @@ import './ProductCard.css';
 
 const ProductCard = ({ product }) => {
   const navigate = useNavigate();
-  
+
   const {
     image,
     title,

@@ -34,48 +34,48 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
 
-            .csrf(csrf -> csrf.disable())
+                .csrf(csrf -> csrf.disable())
 
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-            // Xử lý lỗi xác thực 401
-            .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthEntryPoint))
+                // Xử lý lỗi xác thực 401
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthEntryPoint))
 
-            // Phân quyền cho các role
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**" ).permitAll()
-                    .requestMatchers(HttpMethod.POST, "/api/customer/v1/hoa-don/tao-don").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/customer/v1/ma-giam-gia/hop-le").permitAll()
-                    .requestMatchers(HttpMethod.PUT, "/api/admin/v1/hoa-don/cap-nhat-don-hang/**").permitAll()
-                    .requestMatchers("/api/payment/**").permitAll()
+                // Phân quyền cho các role
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/**" ).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/customer/v1/hoa-don/tao-don").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/customer/v1/ma-giam-gia/hop-le").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/admin/v1/hoa-don/cap-nhat-don-hang/**").permitAll()
+                        .requestMatchers("/api/payment/**").permitAll()
 
-                .requestMatchers(
-                    "/swagger-ui/**",
-                    "/swagger-ui.html",
-                    "/v3/api-docs/**"
-                ).permitAll()
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**"
+                        ).permitAll()
 
-                // sản phẩm/thể loại/nhà xuất bản cho khách không cần đăng nhập
-                .requestMatchers(HttpMethod.GET,
-                    "/api/customer/v1/san-pham/**",
-                    "/api/customer/v1/the-loai/**",
-                    "/api/customer/v1/nha-xuat-ban/**",
-                    "/api/customer/v1/tac-gia/**",
-                    "/api/customer/v1/don-hang/search"
-                ).permitAll()
+                        // sản phẩm/thể loại/nhà xuất bản cho khách không cần đăng nhập
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/customer/v1/san-pham/**",
+                                "/api/customer/v1/the-loai/**",
+                                "/api/customer/v1/nha-xuat-ban/**",
+                                "/api/customer/v1/tac-gia/**",
+                                "/api/customer/v1/don-hang/search"
+                        ).permitAll()
 
-                .requestMatchers("/api/admin/v1/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/api/admin/v1/**").hasAuthority("ROLE_ADMIN")
 
-                .requestMatchers("/api/customer/v1/**").hasAnyAuthority("ROLE_CUSTOMER", "ROLE_ADMIN")
-                .anyRequest().authenticated()
-            )
+                        .requestMatchers("/api/customer/v1/**").hasAnyAuthority("ROLE_CUSTOMER", "ROLE_ADMIN")
+                        .anyRequest().authenticated()
+                )
 
-            .sessionManagement(session ->
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
-            .authenticationProvider(authenticationProvider())
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .authenticationProvider(authenticationProvider())
 
-            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

@@ -42,4 +42,5 @@ public class LichSuDonHang {
     private LocalDateTime ngayTao;
     @Column(name = "ngay_cap_nhat")
     private LocalDateTime ngayCapNhat;
+
 }

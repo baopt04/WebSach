@@ -22,6 +22,7 @@ public class NhaXuatBan {
     @Column(name = "ten_nxb")
     private String tenNxb;
 @Column(name = "dia_chi")
+
     private String diaChi;
 
     @Column(name = "so_dien_thoai")

@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface LichSuDonHangRepository extends JpaRepository<LichSuDonHang, Integer> {
     List<LichSuDonHang> findByHoaDonIdOrderByNgayTaoDesc(Integer idHoaDon);
+
 }

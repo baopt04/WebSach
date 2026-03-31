@@ -96,12 +96,6 @@
 }
 
 
-.hero-visual {
-  position: relative;
-  width: 400px;
-  height: 360px;
-  flex-shrink: 0;
-}
 
 .hero-circles {
   position: absolute;

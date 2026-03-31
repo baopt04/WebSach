@@ -30,4 +30,5 @@ public class SachHinhAnh {
 
     @Column(name = "ngay_tao")
     private LocalDateTime ngayTao;
+
 }

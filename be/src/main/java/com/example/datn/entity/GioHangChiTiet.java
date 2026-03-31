@@ -36,4 +36,6 @@ public class GioHangChiTiet {
 
     @Column(name = "ngay_cap_nhat")
     private LocalDateTime ngayCapNhat;
+
 }
+

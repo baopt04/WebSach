@@ -28,22 +28,22 @@ public class JwtService {
                 .compact();
     }
 
- // láy email từ token
+    // láy email từ token
     public String extractEmail(String token) {
         return extractAllClaims(token).getSubject();
     }
 
- // lấy role từ token
+    // lấy role từ token
     public String extractRole(String token) {
         return extractAllClaims(token).get("role", String.class);
     }
 
-   //Check xem token đã hết hạn chưa
+    //Check xem token đã hết hạn chưa
     public boolean isTokenExpired(String token) {
         return extractAllClaims(token).getExpiration().before(new Date());
     }
 
-  // Check token có hợp leje hay không
+    // Check token có hợp leje hay không
     public boolean isTokenValid(String token, String email) {
         try {
             return extractEmail(token).equals(email) && !isTokenExpired(token);

@@ -8,4 +8,5 @@ import java.util.List;
 public interface SachHinhAnhRepository extends JpaRepository<SachHinhAnh, Integer> {
     List<SachHinhAnh> findBySachId(Integer idSach);
     List<SachHinhAnh> findBySachIdIn(List<Integer> sachIds);
+
 }

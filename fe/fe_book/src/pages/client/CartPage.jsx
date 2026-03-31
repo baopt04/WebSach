@@ -162,7 +162,7 @@ const CartPage = () => {
       }
     };
     fetchVouchers();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sumAmount]);
 
   useEffect(() => {
@@ -318,14 +318,14 @@ const CartPage = () => {
           setOrdering(true);
           await createHoaDon(payload);
           message.success('Đặt hàng thành công!');
-          
+
           // Xóa giỏ hàng
           if (isLoggedIn) {
             clearCartCount();
           } else {
             localStorage.removeItem('guestCart');
           }
-          
+
           setTimeout(() => {
             navigate('/order-success', { state: { isLoggedIn } });
           }, 1000);
@@ -352,9 +352,9 @@ const CartPage = () => {
       key: 'tenSach',
       render: (_, record) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <img 
-            src={record.hinhAnh || 'https://via.placeholder.com/100x140?text=No+Image'} 
-            alt={record.tenSach} 
+          <img
+            src={record.hinhAnh || 'https://via.placeholder.com/100x140?text=No+Image'}
+            alt={record.tenSach}
             style={{ width: '40px', height: '56px', objectFit: 'cover', borderRadius: '4px' }}
           />
           <Link to={`/products/${record.idSach}`} style={{ color: '#000', fontWeight: 500 }}>
@@ -394,11 +394,11 @@ const CartPage = () => {
       align: 'center',
       width: 60,
       render: (_, record) => (
-        <Button 
-          type="text" 
-          danger 
-          icon={<DeleteOutlined />} 
-          onClick={() => handleRemoveItem(record.idGioHangChiTiet)} 
+        <Button
+          type="text"
+          danger
+          icon={<DeleteOutlined />}
+          onClick={() => handleRemoveItem(record.idGioHangChiTiet)}
         />
       ),
     },
@@ -548,10 +548,10 @@ const CartPage = () => {
             ) : (
               <div className="cart-items-list">
                 <p style={{ color: 'black', fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>Thông tin đơn hàng:</p>
-                <Table 
-                  columns={cartColumns} 
-                  dataSource={items} 
-                  rowKey="idGioHangChiTiet" 
+                <Table
+                  columns={cartColumns}
+                  dataSource={items}
+                  rowKey="idGioHangChiTiet"
                   pagination={false}
                   bordered
                   className="cart-table"
@@ -592,10 +592,10 @@ const CartPage = () => {
                   </div>
                 )}
               </div>
-              <TextArea 
-                rows={3} 
-                placeholder="Nhập ghi chú (nếu có cho đơn hàng)" 
-                className="note-input" 
+              <TextArea
+                rows={3}
+                placeholder="Nhập ghi chú (nếu có cho đơn hàng)"
+                className="note-input"
                 style={{ marginTop: 16 }}
                 value={ghiChu}
                 onChange={(e) => setGhiChu(e.target.value)}
