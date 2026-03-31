@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import com.example.datn.enums.OrderStatus;
@@ -63,9 +64,9 @@ public class HoaDon {
     @Column(name = "phuong_thuc")
     private PaymentMethod phuongThuc = PaymentMethod.TIEN_MAT;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "thanh_toan")
-    private PaymentStatus thanhToan = PaymentStatus.CHUA_THANH_TOAN;
+    //    @Enumerated(EnumType.STRING)
+//    @Column(name = "thanh_toan")
+//    private PaymentStatus thanhToan = PaymentStatus.CHUA_THANH_TOAN;
     @Enumerated(EnumType.STRING)
     @Column(name = "loai_hoa_don")
     private TypeBill loaiHoaDon = TypeBill.OFFLINE;
@@ -80,7 +81,7 @@ public class HoaDon {
     private LocalDateTime ngayGiaoThanhCong;
 
     @Column(name = "ngay_nhan")
-    private LocalDateTime ngayNhan;
+    private LocalDate ngayNhan;
 
     @Column(name = "ghi_chu")
     private String ghiChu;

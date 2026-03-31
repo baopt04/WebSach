@@ -18,7 +18,7 @@ public class HoaDonChiTiet {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_hdct")
+    @Column(name = "id")
     private Integer id;
 
     @ManyToOne
@@ -35,6 +35,7 @@ public class HoaDonChiTiet {
     @Column(name = "don_gia")
     private BigDecimal donGia;
     @Enumerated(EnumType.STRING)
+
     @Column(name = "trang_thai")
     private OrderStatus trangThai;
 

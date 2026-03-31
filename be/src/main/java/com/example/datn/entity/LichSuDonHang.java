@@ -35,7 +35,7 @@ public class LichSuDonHang {
     @Column(name = "trang_thai")
     private OrderStatus trangThai;
 
-    @Column(name = "ghi_chu")
+    @Column(name = "ghi_chu_chuyen_trang_thai")
     private String ghiChu;
 
     @Column(name = "ngay_tao")

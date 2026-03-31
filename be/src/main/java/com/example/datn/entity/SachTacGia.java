@@ -2,6 +2,7 @@ package com.example.datn.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -13,35 +14,22 @@ import java.time.LocalDateTime;
 @Builder
 public class SachTacGia {
 
-    @EmbeddedId
-    private SachTacGiaId id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("idSach")
+    @ManyToOne
     @JoinColumn(name = "id_sach")
     private Sach sach;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("idTacGia")
+    @ManyToOne
     @JoinColumn(name = "id_tac_gia")
     private TacGia tacGia;
-
-    @Column(name = "vai_tro", length = 100)
-    private String vaiTro;  // Ví dụ: "Tác giả chính", "Đồng tác giả", "Dịch giả"
-
-    @Column(name = "ngay_tao", updatable = false)
+    @Column(name = "vai_tro")
+    private String vaiTro;
+    @Column(name = "ngay_tao")
     private LocalDateTime ngayTao;
 
     @Column(name = "ngay_cap_nhat")
     private LocalDateTime ngayCapNhat;
-
-    @PrePersist
-    protected void onCreate() {
-        ngayTao = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        ngayCapNhat = LocalDateTime.now();
-    }
 }

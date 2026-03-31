@@ -2,10 +2,6 @@ package com.example.datn.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.time.LocalDateTime;
-
-import jakarta.persistence.*;
-import lombok.*;
 
 import java.time.LocalDateTime;
 
@@ -20,7 +16,6 @@ public class SachHinhAnh {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
     private Integer id;
 
     @ManyToOne

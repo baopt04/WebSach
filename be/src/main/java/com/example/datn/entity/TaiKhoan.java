@@ -26,6 +26,8 @@ public class TaiKhoan {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+    @Column(name = "ma_tai_khoan")
+    private String maTaiKhoan;
 
     @Column(nullable = false, unique = true)
     private String email;
