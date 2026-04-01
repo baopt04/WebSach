@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { Card, Modal, Form, Input, InputNumber, Select, DatePicker, Space, Button, Tooltip, message, Descriptions, Switch } from 'antd';
 import { EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
+dayjs.extend(customParseFormat);
 import DataTable from '../../components/admin/DataTable';
 import SearchBar from '../../components/admin/SearchBar';
 import PageHeader from '../../components/admin/PageHeader';
 import StatusTag from '../../components/admin/StatusTag';
 import './AdminPage.css';
-import { formatDate } from '../../utils/format';
+import { formatDate, formatDateTime } from '../../utils/format';
 import { getAllVoucher, createVoucher, updateVoucher, searchVoucher, getVoucherId } from '../../services/VoucherService';
 
 const { Option } = Select;
@@ -42,7 +44,7 @@ const CouponsPage = () => {
         toDate: item.ngayKetThuc,
         usedCount: 0,
         maxUsage: item.soLuong,
-        status: item.trangThai === true ? 'active' : 'inactive',
+        status: item.trangThai,
         raw: item,
       }));
       setData(mapped);
@@ -71,7 +73,7 @@ const CouponsPage = () => {
         toDate: item.ngayKetThuc,
         usedCount: 0,
         maxUsage: item.soLuong,
-        status: item.trangThai === 1 ? 'active' : 'inactive',
+        status: item.trangThai,
         raw: item,
       }));
       setData(mapped);
@@ -107,9 +109,9 @@ const CouponsPage = () => {
       minOrder: r.minOrder,
       maxUsage: r.maxUsage,
       dateRange: r.fromDate && r.toDate
-        ? [dayjs(r.fromDate), dayjs(r.toDate)]
+        ? [dayjs(r.fromDate, 'DD-MM-YYYY HH:mm:ss'), dayjs(r.toDate, 'DD-MM-YYYY HH:mm:ss')]
         : null,
-      status: r.status === 'active'
+      status: r.status
     });
     setModalOpen(true);
   };
@@ -127,8 +129,17 @@ const CouponsPage = () => {
     }
   };
 
-  const disabledDate = (current) => {
-    return current && current < dayjs().startOf('day');
+  const formatPayloadDate = (d) => (d ? dayjs(d).format('DD-MM-YYYY HH:mm:00') : null);
+
+  const validateDateRange = (_, range) => {
+    if (!range || range.length !== 2 || !range[0] || !range[1]) {
+      return Promise.reject(new Error('Vui lòng chọn thời gian'));
+    }
+    const start = dayjs(range[0]);
+    const end = dayjs(range[1]);
+    if (!start.isValid() || !end.isValid()) return Promise.reject(new Error('Thời gian không hợp lệ'));
+    if (end.isBefore(start)) return Promise.reject(new Error('Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu'));
+    return Promise.resolve();
   };
 
   const handleSubmit = (values) => {
@@ -139,16 +150,11 @@ const CouponsPage = () => {
       cancelText: 'Hủy',
       onOk: async () => {
         try {
-          const startDateStr = values.dateRange
-            ? dayjs(values.dateRange[0]).format("DD-MM-YYYY")
-            : null;
-
-          const endDateStr = values.dateRange
-            ? dayjs(values.dateRange[1]).format("DD-MM-YYYY")
-            : null;
+          const startDateStr = values.dateRange ? formatPayloadDate(values.dateRange[0]) : null;
+          const endDateStr = values.dateRange ? formatPayloadDate(values.dateRange[1]) : null;
 
           const payload = {
-            tenMaGiamGia: values.name,
+            tenMaGiamGia: String(values.name || '').trim(),
             giaTriGiam: values.value,
             tienToiThieu: values.minOrder,
             ngayBatDau: startDateStr,
@@ -157,20 +163,10 @@ const CouponsPage = () => {
           };
 
           if (editingItem) {
-            payload.trangThai = !!values.status;
+            payload.trangThai = values.status;
             await updateVoucher(editingItem.id, payload);
             message.success("Cập nhật thành công");
           } else {
-            let isAutoActive = false;
-            if (values.dateRange && values.dateRange[0]) {
-              const start = dayjs(values.dateRange[0]).startOf('day');
-              const today = dayjs().startOf('day');
-              if (start.isSame(today) || start.isBefore(today)) {
-                isAutoActive = true;
-              }
-            }
-            payload.trangThai = isAutoActive;
-
             await createVoucher(payload);
             message.success("Thêm thành công");
           }
@@ -214,8 +210,8 @@ const CouponsPage = () => {
 
 
     },
-    { title: 'Từ ngày', dataIndex: 'fromDate', key: 'fromDate', render: (v) => formatDate(v) },
-    { title: 'Đến ngày', dataIndex: 'toDate', key: 'toDate', render: (v) => formatDate(v) },
+    { title: 'Từ ngày', dataIndex: 'fromDate', key: 'fromDate', render: (v) => formatDateTime(v) },
+    { title: 'Đến ngày', dataIndex: 'toDate', key: 'toDate', render: (v) => formatDateTime(v) },
 
     {
       title: 'Trạng thái',
@@ -253,8 +249,9 @@ const CouponsPage = () => {
           />
           <Select defaultValue="" style={{ width: 160 }}>
             <Option value="">Tất cả trạng thái</Option>
-            <Option value="active">Đang hoạt động</Option>
-            <Option value="expired">Hết hạn</Option>
+            <Option value="HOAT_DONG">Đang hoạt động</Option>
+            <Option value="NGUNG_HOAT_DONG">Ngừng hoạt động</Option>
+            <Option value="CHUA_KICH_HOAT">Chưa kích hoạt</Option>
           </Select>
         </div>
         <DataTable
@@ -278,7 +275,16 @@ const CouponsPage = () => {
         width={600}
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Form.Item name="name" label="Tên mã giảm giá" rules={[{ required: true }]}>
+          <Form.Item
+            name="name"
+            label="Tên mã giảm giá"
+            rules={[
+              { required: true, message: 'Vui lòng nhập tên mã giảm giá' },
+              { whitespace: true, message: 'Tên mã giảm giá không được để trống' },
+              { min: 3, message: 'Tên mã giảm giá phải có ít nhất 3 ký tự' },
+              { max: 100, message: 'Tên mã giảm giá tối đa 100 ký tự' },
+            ]}
+          >
             <Input placeholder="" />
           </Form.Item>
           <Form.Item
@@ -316,7 +322,16 @@ const CouponsPage = () => {
                   if (!Number.isFinite(val)) return Promise.reject(new Error("Giá trị không hợp lệ"));
                   return Promise.resolve();
                 }
-              }
+              },
+              ({ getFieldValue }) => ({
+                validator: (_, val) => {
+                  const v = getFieldValue('value');
+                  if (val === undefined || val === null || v === undefined || v === null) return Promise.resolve();
+                  if (!Number.isFinite(val) || !Number.isFinite(v)) return Promise.resolve();
+                  if (Number(v) >= Number(val)) return Promise.reject(new Error('Đơn tối thiểu phải lớn hơn giá trị giảm'));
+                  return Promise.resolve();
+                }
+              })
             ]}
           >
             <InputNumber
@@ -335,8 +350,9 @@ const CouponsPage = () => {
               {
                 validator: (_, val) => {
                   if (val === undefined || val === null) return Promise.resolve();
-                  if (val <= 0) return Promise.reject(new Error("Giá trị phải lớn hơn 0"));
                   if (!Number.isFinite(val)) return Promise.reject(new Error("Giá trị không hợp lệ"));
+                  if (!Number.isInteger(val)) return Promise.reject(new Error("Số lượng phải là số nguyên"));
+                  if (val <= 0) return Promise.reject(new Error("Số lượng phải lớn hơn 0"));
                   return Promise.resolve();
                 }
               }
@@ -350,14 +366,18 @@ const CouponsPage = () => {
               parser={value => value ? value.replace(/,/g, '') : ''}
             />
           </Form.Item>
-          <Form.Item name="dateRange" label="Thời gian hiệu lực" rules={[{ required: true, message: 'Vui lòng chọn thời gian' }]}>
-            <RangePicker style={{ width: '100%' }} format="DD/MM/YYYY" disabledDate={disabledDate} />
+          <Form.Item
+            name="dateRange"
+            label="Thời gian hiệu lực"
+            rules={[{ validator: validateDateRange }]}
+          >
+            <RangePicker
+              style={{ width: '100%' }}
+              format="DD/MM/YYYY HH:mm"
+              showTime={{ format: "HH:mm" }}
+            />
           </Form.Item>
-          {editingItem && (
-            <Form.Item name="status" label="Trạng thái" valuePropName="checked">
-              <Switch checkedChildren="Hoạt động" unCheckedChildren="Ngừng HĐ" />
-            </Form.Item>
-          )}
+
         </Form>
       </Modal>
 
@@ -377,7 +397,7 @@ const CouponsPage = () => {
             <Descriptions.Item label="Mã voucher">{detailItem.maVoucher}</Descriptions.Item>
             <Descriptions.Item label="Tên chương trình">{detailItem.tenMaGiamGia}</Descriptions.Item>
             <Descriptions.Item label="Trạng thái">
-              <StatusTag status={detailItem.trangThai === true ? 'active' : 'inactive'} />
+              <StatusTag status={detailItem.trangThai} />
             </Descriptions.Item>
             <Descriptions.Item label="Giá trị giảm">
               <span style={{ color: '#fa8c16', fontWeight: 'bold' }}>
@@ -396,16 +416,7 @@ const CouponsPage = () => {
             <Descriptions.Item label="Đến ngày">
               {formatDate(detailItem.ngayKetThuc)}
             </Descriptions.Item>
-            {detailItem.ngayTao && (
-              <Descriptions.Item label="Ngày tạo">
-                {formatDate(detailItem.ngayTao)}
-              </Descriptions.Item>
-            )}
-            {detailItem.ngayCapNhat && (
-              <Descriptions.Item label="Ngày cập nhật">
-                {formatDate(detailItem.ngayCapNhat)}
-              </Descriptions.Item>
-            )}
+
           </Descriptions>
         )}
       </Modal>

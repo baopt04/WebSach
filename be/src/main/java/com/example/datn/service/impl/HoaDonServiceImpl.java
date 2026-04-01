@@ -19,6 +19,7 @@ import com.example.datn.entity.Sach;
 import com.example.datn.entity.SachHinhAnh;
 import com.example.datn.entity.TaiKhoan;
 import com.example.datn.enums.OrderStatus;
+import com.example.datn.enums.PaymentMethod;
 import com.example.datn.enums.TypeBill;
 import com.example.datn.repository.GioHangChiTietRepository;
 import com.example.datn.repository.GioHangRepository;
@@ -31,7 +32,6 @@ import com.example.datn.repository.SachHinhAnhRepository;
 import com.example.datn.repository.SachRepository;
 import com.example.datn.repository.TaiKhoanRepository;
 import com.example.datn.service.HoaDonService;
-import com.example.datn.enums.PaymentMethod;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -101,6 +101,7 @@ public class HoaDonServiceImpl implements HoaDonService {
                 .trangThai(hoaDon.getTrangThai())
                 .phuongThuc(hoaDon.getPhuongThuc())
                 .loaiHoaDon(hoaDon.getLoaiHoaDon())
+                .ngayNhan(hoaDon.getNgayNhan())
                 .ghiChu(hoaDon.getGhiChu())
                 .ngayTao(hoaDon.getNgayTao())
                 .ngayCapNhat(hoaDon.getNgayCapNhat())
@@ -297,9 +298,6 @@ public class HoaDonServiceImpl implements HoaDonService {
         }
 
         OrderStatus initialStatus = OrderStatus.CHO_XAC_NHAN;
-        if (request.getPaymentMethod() == PaymentMethod.CHUYEN_KHOAN) {
-            initialStatus = OrderStatus.DA_XAC_NHAN;
-        }
 
         HoaDon hoaDon = HoaDon.builder()
                 .khachHang(khachHang)
@@ -311,8 +309,9 @@ public class HoaDonServiceImpl implements HoaDonService {
                 .tongTienHang(tongTienHang)
                 .ghiChu(request.getGhiChu())
                 .trangThai(initialStatus)
-                .phuongThuc(request.getPaymentMethod())
+                .ngayNhan(request.getNgayNhan())
                 .loaiHoaDon(TypeBill.ONLINE)
+                .phuongThuc(request.getPhuongThucThanhToan())
                 .ngayTao(LocalDateTime.now())
                 .ngayCapNhat(LocalDateTime.now())
                 .build();
@@ -329,8 +328,11 @@ public class HoaDonServiceImpl implements HoaDonService {
             hoaDon.setGiamGia(BigDecimal.ZERO);
         }
 
-        String randomMaHD = "HD" + String.format("%05d", new Random().nextInt(100000));
-        hoaDon.setMaHoaDon(randomMaHD);
+        String maHoaDon = request.getMaHoaDon();
+        if (maHoaDon == null || maHoaDon.trim().isEmpty()) {
+            maHoaDon = "HD" + String.format("%05d", new Random().nextInt(100000));
+        }
+        hoaDon.setMaHoaDon(maHoaDon);
         hoaDon = hoaDonRepository.save(hoaDon);
 
         if (maGiamGia != null) {
@@ -396,19 +398,12 @@ public class HoaDonServiceImpl implements HoaDonService {
                 .build();
         lichSuDonHangRepository.save(lichSu);
 
-        String vnpayUrl = null;
-        if (request.getPaymentMethod() == PaymentMethod.CHUYEN_KHOAN) {
-            BigDecimal amountToPay = tongTienHang.subtract(giamGia).add(request.getPhiShip() != null ? request.getPhiShip() : BigDecimal.ZERO);
-            if (amountToPay.compareTo(BigDecimal.ZERO) < 0) amountToPay = BigDecimal.ZERO;
-//            vnpayUrl = vnPayUtil.createPaymentUrl(hoaDon.getMaHoaDon(), amountToPay, "ThanhToanDonHang_" + hoaDon.getMaHoaDon(), "127.0.0.1");
-        }
-
+        // Trả về maHoaDon để FE dùng khi gọi API tạo URL VNPay
         return HoaDonResponse.builder()
                 .id(hoaDon.getId())
                 .maHoaDon(hoaDon.getMaHoaDon())
                 .hoTenKhachHang(hoaDon.getHoTen())
                 .trangThai(hoaDon.getTrangThai())
-                .vnpayUrl(vnpayUrl)
                 .build();
     }
 

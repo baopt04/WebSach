@@ -72,7 +72,17 @@ const ProductCard = ({ product }) => {
             icon={<ShoppingCartOutlined />}
             className="btn-buy"
             block
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              const buyNowItem = {
+                idSach: product.id,
+                tenSach: title,
+                hinhAnh: image || '',
+                giaBan: price,
+                soLuong: 1,
+              };
+              navigate('/buy-now', { state: { item: buyNowItem } });
+            }}
           >
             Mua Ngay
           </Button>

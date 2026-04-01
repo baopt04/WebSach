@@ -5,6 +5,10 @@ export const formatDate = (date) => {
     return dayjs(date).format("DD/MM/YYYY");
 };
 
+export const formatDateTime = (date) => {
+    if (!date) return "";
+    return dayjs(date).format("DD/MM/YYYY HH:mm");
+};
 // export const formatDate = (date) => {
 //   if (!date) return "";
 //   const [day, month, year] = date.split("-");

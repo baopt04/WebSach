@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getChiTietSanPham, validateSoLuongSanPham } from '../../services/client/SanPhamCustomer';
 import { addCartItem } from '../../services/client/CartCustomerService';
+import { useCart } from '../../context/CartContext';
 import { Rate, InputNumber, Tabs, Tag, Breadcrumb, message } from 'antd';
 import {
   ShoppingCartOutlined,
@@ -48,6 +49,7 @@ const ImageGallery = ({ images }) => {
 const ProductInfo = ({ product }) => {
   const [qty, setQty] = useState(1);
   const navigate = useNavigate();
+  const { fetchCartCount } = useCart();
   const hasDiscount = product.originalPrice && product.originalPrice > product.price;
   const discount = hasDiscount ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : 0;
 
@@ -59,13 +61,13 @@ const ProductInfo = ({ product }) => {
         await validateSoLuongSanPham(product.id, qty);
         await addCartItem({ idSach: product.id, soLuong: qty });
         message.success("Thêm vào giỏ hàng thành công!");
-        navigate('/cart');
+        await fetchCartCount();
+        // navigate('/cart');
       } catch (error) {
         console.error(error);
         message.error(error.response?.data?.message || error.message || "Lỗi khi thêm vào giỏ hàng");
       }
     } else {
-      // Guest: lưu vào localStorage
       const guestCart = JSON.parse(localStorage.getItem('guestCart') || '[]');
       const existing = guestCart.find(item => item.idSach === product.id);
       if (existing) {
@@ -82,6 +84,7 @@ const ProductInfo = ({ product }) => {
       }
       localStorage.setItem('guestCart', JSON.stringify(guestCart));
       message.success("Thêm vào giỏ hàng thành công!");
+      fetchCartCount();
       navigate('/cart');
     }
   };
@@ -129,12 +132,23 @@ const ProductInfo = ({ product }) => {
           onChange={setQty}
           className="qty-input"
         />
-        <span className="qty-stock">{product.stock} sản phẩm có sẵn</span>
       </div>
 
 
       <div className="detail-cta">
-        <button className="btn-buy-now-detail">
+        <button
+          className="btn-buy-now-detail"
+          onClick={() => {
+            const buyNowItem = {
+              idSach: product.id,
+              tenSach: product.title,
+              hinhAnh: product.images?.[0] || '',
+              giaBan: product.price,
+              soLuong: qty,
+            };
+            navigate('/buy-now', { state: { item: buyNowItem } });
+          }}
+        >
           Mua Ngay
         </button>
         <button className="btn-add-cart" onClick={handleAddToCart}>

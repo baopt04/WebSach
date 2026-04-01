@@ -38,8 +38,8 @@ public class DiaChiRequest {
     @NotBlank(message = "Tên Quận/Huyện không được để trống")
     private String quanHuyen;
 
-    @NotNull(message = "ID Phường/Xã không được để trống")
-    private Integer idPhuongXa;
+    @NotBlank(message = "ID Phường/Xã không được để trống")
+    private String idPhuongXa;
 
     @NotBlank(message = "Tên Phường/Xã không được để trống")
     private String phuongXa;

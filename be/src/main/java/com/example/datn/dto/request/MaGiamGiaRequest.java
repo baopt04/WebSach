@@ -10,8 +10,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
+import com.example.datn.enums.VoucherStatus;
 
 @Getter
 @Setter
@@ -31,17 +31,18 @@ public class MaGiamGiaRequest {
     private BigDecimal tienToiThieu;
 
     @NotNull(message = "Ngày bắt đầu không được để trống")
-    @JsonFormat(pattern = "dd-MM-yyyy")
-    private LocalDate ngayBatDau;
+    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss")
+    private LocalDateTime ngayBatDau;
 
     @NotNull(message = "Ngày kết thúc không được để trống")
-    @JsonFormat(pattern = "dd-MM-yyyy")
-    private LocalDate  ngayKetThuc;
+    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss")
+    private LocalDateTime ngayKetThuc;
 
     @NotNull(message = "Số lượng không được để trống")
     @Min(value = 1, message = "Số lượng phải lớn hơn 0")
     private Integer soLuong;
 
-    @NotNull(message = "Trạng thái không được để trống")
-    private Boolean trangThai;
+    // Có thể bỏ qua valid trangThai vì BE sẽ tự tính bằng ngày,
+    // tuy nhiên vẫn giữ để map data.
+    private VoucherStatus trangThai;
 }

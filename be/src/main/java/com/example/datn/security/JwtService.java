@@ -11,7 +11,7 @@ import java.util.Date;
 public class JwtService {
 
     private static final String SECRET_KEY = "WEBSACH_SECRET_KEY_DATN_2024_SECURE_12345";
-    private static final long EXPIRATION_MS = 1000L * 60 * 60 * 10;
+    private static final long EXPIRATION_MS = 1000L * 60 * 60 * 24;
 
     private Key getSignKey() {
         return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());

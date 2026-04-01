@@ -285,12 +285,12 @@ const OrderDetailAdmin = () => {
       align: 'right',
       render: (_, r) => <Text strong style={{ color: '#ff4d4f' }}>{((r.donGia || 0) * (r.soLuong || 0)).toLocaleString('vi-VN')}₫</Text>
     },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'trangThai',
-      align: 'center',
-      render: (val) => val ? <Tag color="blue">{val}</Tag> : <Text type="secondary">--</Text>
-    },
+    // {
+    //   title: 'Trạng thái',
+    //   dataIndex: 'trangThai',
+    //   align: 'center',
+    //   render: (val) => val ? <Tag color="blue">{val}</Tag> : <Text type="secondary">--</Text>
+    // },
   ];
 
   const totalPayment = (hoaDon.tongTienHang || 0) + (hoaDon.phiShip || 0) - (hoaDon.giamGia || 0);
@@ -357,7 +357,7 @@ const OrderDetailAdmin = () => {
               <Col span={12}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <div><Text type="secondary">Thời gian đặt hàng: </Text><Text>{hoaDon.ngayTao ? dayjs(hoaDon.ngayTao).format('DD/MM/YYYY HH:mm') : '--'}</Text></div>
-                  <div><Text type="secondary">Thời gian dự kiến nhận: </Text><Text>{hoaDon.ngayCapNhat ? dayjs(hoaDon.ngayCapNhat).format('DD/MM/YYYY HH:mm') : '--'}</Text></div>
+                  <div><Text type="secondary">Thời gian dự kiến nhận: </Text><Text>{hoaDon.ngayNhan ? dayjs(hoaDon.ngayNhan).format('DD/MM/YYYY') : '--'}</Text></div>
                   <div><Text type="secondary">Địa chỉ giao hàng: </Text><Text>{hoaDon.diaChiGiaoHang || 'Mua tại quầy'}</Text></div>
                   <div><Text type="secondary">Ghi chú: </Text><Text italic>{hoaDon.ghiChu || 'Không có'}</Text></div>
                 </div>

@@ -19,7 +19,7 @@ public interface MaGiamGiaRepository extends JpaRepository<MaGiamGia, Integer> {
 
     List<MaGiamGia> findAllByOrderByNgayCapNhatDesc();
 
-    @Query("SELECT m FROM MaGiamGia m WHERE m.trangThai = true AND m.soLuong > 0 AND m.tienToiThieu <= :tongTien AND m.ngayKetThuc >= CURRENT_DATE")
+    @Query("SELECT m FROM MaGiamGia m WHERE m.trangThai = com.example.datn.enums.VoucherStatus.HOAT_DONG AND m.soLuong > 0 AND m.tienToiThieu <= :tongTien AND m.ngayKetThuc >= CURRENT_TIMESTAMP")
     List<MaGiamGia> findVouchersForCustomer(@Param("tongTien") java.math.BigDecimal tongTien);
 
 }

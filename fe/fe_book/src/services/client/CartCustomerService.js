@@ -50,6 +50,21 @@ export const removeCartItem = async (id) => {
         const res = await axiosClient.delete(`${BASE}/xoa/${id}`);
         return res.data;
     } catch (error) {
+        // Đã xóa rồi (BE đã xóa khi tạo đơn / gọi trùng) — coi như thành công
+        const httpStatus = error.response?.status;
+        const data = error.response?.data;
+        const msg =
+            (typeof data === "string" ? data : data?.message) ||
+            error.message ||
+            "";
+        const alreadyGone =
+            httpStatus === 404 ||
+            httpStatus === 400 ||
+            (httpStatus === 500 &&
+                /không tồn tại|giỏ hàng/i.test(String(msg)));
+        if (alreadyGone) {
+            return null;
+        }
         throw handleError(error);
     }
 };

@@ -2,8 +2,9 @@ import { Tag } from 'antd';
 
 
 const defaultMap = {
-  active: { color: 'success', label: 'Hoạt động' },
-  inactive: { color: 'error', label: 'Ngừng HĐ' },
+  hoat_dong: { color: 'success', label: 'Hoạt động' },
+  ngung_hoat_dong: { color: 'error', label: 'Ngừng HĐ' },
+  chua_kich_hoat: { color: 'warning', label: 'Chưa kích hoạt' },
   activated: { color: 'success', label: 'Hoạt động' },
   blocked: { color: 'error', label: 'Khóa' },
   true: { color: 'success', label: 'Hoạt động' },

@@ -45,7 +45,7 @@ const OrdersPage = () => {
   const handleSearchKeyword = async (value) => {
     setSearch(value);
     setCurrentPage(1);
-    setDateFilter(null); // Clear date filter when searching by keyword
+    setDateFilter(null);
     if (!value || !value.trim()) {
       loadOrders();
       return;
@@ -92,7 +92,6 @@ const OrdersPage = () => {
     loadOrders();
   };
 
-  // Only filter by status on client-side, since keyword/date are filtered via API
   const filtered = orders.filter((o) => {
     const matchStatus = !statusFilter || o.trangThai === statusFilter;
     return matchStatus;
@@ -116,10 +115,22 @@ const OrdersPage = () => {
       render: (v) => v ? dayjs(v).format('DD/MM/YYYY HH:mm') : ''
     },
     {
-      title: 'Tổng tiền',
-      dataIndex: 'tongTienHang',
-      key: 'tongTienHang',
-      render: (v) => <strong style={{ color: '#1677ff' }}>{v?.toLocaleString('vi-VN')}₫</strong>,
+      title: 'Tổng thanh toán',
+      key: 'tongThanhToan',
+      render: (_, record) => {
+        const tongTien = record.tongTienHang || 0;
+        const phiShip = record.phiShip || 0;
+        const giamGia = record.giamGia || 0;
+        const tong = tongTien + phiShip - giamGia;
+
+        const final = tong < 0 ? 0 : tong;
+
+        return (
+          <strong style={{ color: '#1677ff' }}>
+            {final.toLocaleString('vi-VN')}₫
+          </strong>
+        );
+      },
     },
     {
       title: 'Loại hóa đơn',

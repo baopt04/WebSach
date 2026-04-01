@@ -8,10 +8,17 @@ export const CartProvider = ({ children }) => {
 
   const fetchCartCount = async () => {
     try {
+      if (!localStorage.getItem("token")) {
+        const guestCart = JSON.parse(localStorage.getItem("guestCart") || "[]");
+        const total = guestCart.reduce((sum, item) => sum + (Number(item.soLuong) || 0), 0);
+        setCartCount(total);
+        return;
+      }
       const data = await getCartDetails();
       if (data && data.chiTietList) {
-        // Số lượng theo sản phẩm khác nhau (loại sản phẩm)
-        setCartCount(data.chiTietList.length);
+        // Tổng số lượng sản phẩm (cộng dồn theo từng dòng)
+        const total = data.chiTietList.reduce((sum, line) => sum + (Number(line.soLuong) || 0), 0);
+        setCartCount(total);
       } else {
         setCartCount(0);
       }
@@ -26,9 +33,7 @@ export const CartProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    if (localStorage.getItem("token")) {
-      fetchCartCount();
-    }
+    fetchCartCount();
   }, []);
 
   return (

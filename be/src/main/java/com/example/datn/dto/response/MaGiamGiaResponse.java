@@ -7,8 +7,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.example.datn.enums.VoucherStatus;
 
 @Getter
 @Setter
@@ -21,10 +22,13 @@ public class MaGiamGiaResponse {
     private String tenMaGiamGia;
     private BigDecimal giaTriGiam;
     private BigDecimal tienToiThieu;
-    private LocalDate  ngayBatDau;
-    private LocalDate ngayKetThuc;
+    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss")
+    private LocalDateTime ngayBatDau;
+
+    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss")
+    private LocalDateTime ngayKetThuc;
     private Integer soLuong;
-    private Boolean trangThai;
+    private VoucherStatus trangThai;
     private LocalDateTime ngayTao;
     private LocalDateTime ngayCapNhat;
 }

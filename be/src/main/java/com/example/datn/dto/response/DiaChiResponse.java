@@ -23,7 +23,7 @@ public class DiaChiResponse {
     private String tinhThanh;
     private Integer idQuanHuyen;
     private String quanHuyen;
-    private Integer idPhuongXa;
+    private String idPhuongXa;
     private String phuongXa;
     private String diaChiChiTiet;
     private Boolean macDinh;

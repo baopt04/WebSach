@@ -1,12 +1,9 @@
 package com.example.datn.controller;
 
 import com.example.datn.dto.request.CreatePayMentMethodRequest;
-import com.example.datn.dto.response.PayMentVnPayResponse;
 import com.example.datn.service.VNPayService;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,23 +16,38 @@ import java.util.Map;
 @RequestMapping("/api/payment")
 @RequiredArgsConstructor
 public class VNPayController {
-@Autowired
-    private VNPayService vnPayService;
 
+    private final VNPayService vnPayService;
+
+    /**
+     * Tạo URL thanh toán VNPay.
+     * POST /api/payment/payment-vnpay
+     * Body: { "vnp_TxnRef": "HD001", "vnp_Amount": "500000", ... }
+     */
     @PostMapping("/payment-vnpay")
-    public ResponseEntity<String> payWithVnPay(@RequestBody CreatePayMentMethodRequest payModel, HttpServletRequest request) {
+    public ResponseEntity<String> payWithVnPay(
+            @RequestBody CreatePayMentMethodRequest payModel,
+            HttpServletRequest request) {
         try {
-            String paymetUrl = vnPayService.payWithVnpay(payModel, request);
-            return ResponseEntity.ok(paymetUrl);  // Trả về URL thanh toán với mã trạng thái 200 OK
+            String paymentUrl = vnPayService.payWithVnpay(payModel, request);
+            return ResponseEntity.ok(paymentUrl);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(e.getMessage());
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error generating payment URL: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error generating payment URL: " + e.getMessage());
         }
     }
 
-    @PostMapping("/vnpay-success")
-    public ResponseEntity<String> vnPayCallback(@RequestBody PayMentVnPayResponse response) {
-        boolean paymentSuccess = vnPayService.paymentSucessFully(response);
+    /**
+     * VNPay redirect trình duyệt về đây sau khi khách thanh toán.
+     * GET /api/payment/vnpay-success?vnp_ResponseCode=00&vnp_TxnRef=HD001&...
+     * VNPay dùng GET request với query params, KHÔNG phải POST.
+     */
+    @GetMapping("/vnpay-success")
+    public ResponseEntity<String> vnPayCallback(@RequestParam Map<String, String> params) {
+        boolean paymentSuccess = vnPayService.paymentSucessFully(params);
         if (paymentSuccess) {
             return ResponseEntity.ok("Thanh toán thành công");
         } else {

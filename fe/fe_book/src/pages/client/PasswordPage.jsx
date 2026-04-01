@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Input, Button, message } from 'antd';
+import { Input, Button, message, Modal } from 'antd';
 import './PasswordPage.css';
 import { changePassword } from '../../services/client/ProfileCustomer';
 
@@ -14,27 +14,51 @@ const PasswordPage = () => {
       message.error('Vui lòng nhập đầy đủ thông tin!');
       return;
     }
+    if (newPassword.length < 6) {
+      message.error('Mật khẩu mới phải có ít nhất 6 ký tự!');
+      return;
+    }
     if (newPassword !== confirmPassword) {
       message.error('Mật khẩu mới không khớp!');
       return;
     }
 
-    try {
-      setLoading(true);
-      await changePassword({
-        matKhauCu: oldPassword,
-        matKhauMoi: newPassword,
-        xacNhanMatKhauMoi: confirmPassword
-      });
-      message.success('Đổi mật khẩu thành công!');
-      setOldPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-    } catch (error) {
-      message.error(error?.response?.data || error?.message || 'Đổi mật khẩu thất bại!');
-    } finally {
-      setLoading(false);
-    }
+
+    Modal.confirm({
+      title: 'Xác nhận đổi mật khẩu',
+      content: 'Bạn có chắc chắn muốn đổi mật khẩu không?',
+      okText: 'Đồng ý',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          setLoading(true);
+          await changePassword({
+            matKhauCu: oldPassword,
+            matKhauMoi: newPassword,
+            xacNhanMatKhauMoi: confirmPassword
+          });
+          message.success('Đổi mật khẩu thành công!');
+          setOldPassword('');
+          setNewPassword('');
+          setConfirmPassword('');
+          localStorage.removeItem("token");
+          localStorage.removeItem("email");
+          localStorage.removeItem("hoTen");
+          localStorage.removeItem("soDienThoai");
+          localStorage.removeItem("gioiTinh");
+          localStorage.removeItem("ngaySinh");
+          localStorage.removeItem("role");
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 1500);
+
+        } catch (error) {
+          message.error(error?.response?.data || error?.message || 'Đổi mật khẩu thất bại!');
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
   };
 
   return (

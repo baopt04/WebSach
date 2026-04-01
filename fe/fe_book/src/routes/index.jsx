@@ -7,6 +7,7 @@ import HomePage from '../pages/client/HomePage';
 import ProductsPage from '../pages/client/ProductsPage';
 import ProductDetailPage from '../pages/client/ProductDetailPage';
 import CartPage from '../pages/client/CartPage';
+import BuyNowPage from '../pages/client/BuyNowPage';
 import LoginPage from '../pages/client/LoginPage';
 import AccountLayout from '../pages/client/AccountLayout';
 import OrdersPage from '../pages/client/OrdersPage';
@@ -36,6 +37,7 @@ const router = createBrowserRouter([
       { path: 'products', element: <ProductsPage /> },
       { path: 'products/:id', element: <ProductDetailPage /> },
       { path: 'cart', element: <CartPage /> },
+      { path: 'buy-now', element: <BuyNowPage /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'order-tracking', element: <SearchOrderPage /> },
       { path: 'order-success', element: <OrderSuccessPage /> },

@@ -146,11 +146,26 @@ const ProfilePage = () => {
         ngaySinh: profileForm.ngaySinh ? profileForm.ngaySinh.format('DD-MM-YYYY') : null
       };
 
-      await updateMyProfile(payload);
-      message.success("Cập nhật hồ sơ thành công!");
-      setIsProfileModalOpen(false);
-      setFormErrors({});
-      fetchData();
+      Modal.confirm({
+        title: 'Cập nhật hồ sơ',
+        content: 'Bạn có chắc chắn muốn cập nhật hồ sơ của mình?',
+        okText: 'Cập nhật',
+        cancelText: 'Hủy',
+        onOk: async () => {
+          try {
+            await updateMyProfile(payload);
+
+            message.success("Cập nhật hồ sơ thành công!");
+            setIsProfileModalOpen(false);
+            setFormErrors({});
+            fetchData();
+          } catch (error) {
+            console.log("ERROR:", error);
+
+            message.error(error.message || "Có lỗi xảy ra khi cập nhật hồ sơ.");
+          }
+        }
+      });
     } catch (error) {
       message.error("Có lỗi xảy ra khi cập nhật hồ sơ.");
     }
@@ -251,39 +266,36 @@ const ProfilePage = () => {
   const handleSaveAddress = async () => {
     if (!validateAddress()) return;
 
-    try {
-      if (addressForm.id) {
-        confirm({
-          title: 'Cập nhật địa chỉ',
-          content: 'Bạn có chắc chắn muốn cập nhật địa chỉ này?',
-          okText: 'Cập nhật',
-          cancelText: 'Hủy',
-          onOk: async () => {
+    const isUpdate = !!addressForm.id;
+
+    confirm({
+      title: isUpdate ? 'Cập nhật địa chỉ' : 'Thêm địa chỉ',
+      content: isUpdate
+        ? 'Bạn có chắc chắn muốn cập nhật địa chỉ này?'
+        : 'Bạn có chắc chắn muốn thêm địa chỉ này?',
+      okText: isUpdate ? 'Cập nhật' : 'Thêm',
+      cancelText: 'Hủy',
+
+      onOk: async () => {
+        try {
+          if (isUpdate) {
             await updateMyAddress(addressForm.id, addressForm);
             message.success("Cập nhật địa chỉ thành công!");
-            setIsAddressModalOpen(false);
-            fetchData();
-          }
-        });
-      } else {
-        confirm({
-          title: 'Thêm địa chỉ',
-          content: 'Bạn có chắc chắn muốn thêm địa chỉ này?',
-          okText: 'Thêm',
-          cancelText: 'Hủy',
-          onOk: async () => {
+          } else {
             await createMyAddress(addressForm);
             message.success("Thêm địa chỉ thành công!");
-            setIsAddressModalOpen(false);
-            fetchData();
           }
-        });
+          setIsAddressModalOpen(false);
+          fetchData();
+        } catch (error) {
+          console.log("ERROR:", error);
+
+          message.error(
+            error.message || "Lỗi khi lưu địa chỉ."
+          );
+        }
       }
-      setIsAddressModalOpen(false);
-      fetchData();
-    } catch (error) {
-      message.error("Lỗi khi lưu địa chỉ.");
-    }
+    });
   };
 
   const handleSetDefault = async (id) => {
