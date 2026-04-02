@@ -1,8 +1,5 @@
 package com.example.datn.service.impl;
 
-
-
-
 import com.example.datn.dto.request.SachRequest;
 import com.example.datn.dto.response.SachResponse;
 import com.example.datn.entity.*;
@@ -25,8 +22,12 @@ public class SachServiceImpl implements SachService {
 
     @Override
     public List<SachResponse> getAll() {
-        return sachRepository.findAll().stream().map(this::mapToResponse).toList();
+        return sachRepository.findAll()
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
     }
+
     @Override
     public SachResponse detail(Integer id) {
         Sach sach = sachRepository.findById(id)
@@ -62,21 +63,22 @@ public class SachServiceImpl implements SachService {
                 .theLoai(theLoai)
                 .nhaXuatBan(nxb)
                 .trangThai(true)
+                .ngayTao(LocalDateTime.now())
+                .ngayCapNhat(LocalDateTime.now())
                 .build();
 
         Sach savedSach = sachRepository.save(sach);
 
-        // lưu ảnh nếu có
-        System.out.println("Đang save ảnh: " + request.getDuongDanAnh());
+        if (request.getDuongDanAnh() != null && !request.getDuongDanAnh().isBlank()) {
+            SachHinhAnh hinhAnh = SachHinhAnh.builder()
+                    .sach(savedSach)
+                    .duongDan(request.getDuongDanAnh())
+                    .laAnhChinh(true)
+                    .ngayTao(LocalDateTime.now())
+                    .build();
 
-        SachHinhAnh hinhAnh = SachHinhAnh.builder()
-                .sach(savedSach)
-                .duongDan(request.getDuongDanAnh())
-                .laAnhChinh(true)
-                .ngayTao(LocalDateTime.now())
-                .build();
-
-        sachHinhAnhRepository.save(hinhAnh);
+            sachHinhAnhRepository.save(hinhAnh);
+        }
 
         return mapToResponse(savedSach);
     }
@@ -92,7 +94,9 @@ public class SachServiceImpl implements SachService {
 
         NhaXuatBan nxb = nhaXuatBanRepository.findById(request.getIdNxb())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy NXB"));
-
+        sach.setMaSach(request.getMaSach());
+        sach.setMaVach(request.getMaVach());
+        sach.setTenSach(request.getTenSach());
         sach.setTenSach(request.getTenSach());
         sach.setGiaBan(request.getGiaBan());
         sach.setSoLuong(request.getSoLuong());
@@ -103,8 +107,31 @@ public class SachServiceImpl implements SachService {
         sach.setMoTa(request.getMoTa());
         sach.setTheLoai(theLoai);
         sach.setNhaXuatBan(nxb);
+        sach.setNgayCapNhat(LocalDateTime.now());
 
-        return mapToResponse(sachRepository.save(sach));
+        Sach savedSach = sachRepository.save(sach);
+
+        if (request.getDuongDanAnh() != null && !request.getDuongDanAnh().isBlank()) {
+
+            List<SachHinhAnh> dsAnh = sachHinhAnhRepository.findBySachId(id);
+
+            if (!dsAnh.isEmpty()) {
+                SachHinhAnh anh = dsAnh.get(0);
+                anh.setDuongDan(request.getDuongDanAnh());
+                sachHinhAnhRepository.save(anh);
+            } else {
+                SachHinhAnh hinhAnh = SachHinhAnh.builder()
+                        .sach(savedSach)
+                        .duongDan(request.getDuongDanAnh())
+                        .laAnhChinh(true)
+                        .ngayTao(LocalDateTime.now())
+                        .build();
+
+                sachHinhAnhRepository.save(hinhAnh);
+            }
+        }
+
+        return mapToResponse(savedSach);
     }
 
     @Override
@@ -113,10 +140,10 @@ public class SachServiceImpl implements SachService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sách"));
 
         sach.setTrangThai(false);
+        sach.setNgayCapNhat(LocalDateTime.now());
 
         sachRepository.save(sach);
     }
-
 
     @Override
     public List<SachResponse> search(String keyword) {
@@ -135,19 +162,25 @@ public class SachServiceImpl implements SachService {
     }
 
     private SachResponse mapToResponse(Sach sach) {
-
         String duongDanAnh = sachHinhAnhRepository.findBySachId(sach.getId())
                 .stream()
                 .findFirst()
                 .map(SachHinhAnh::getDuongDan)
                 .orElse(null);
-
         return SachResponse.builder()
                 .id(sach.getId())
                 .maSach(sach.getMaSach())
+                .maVach(sach.getMaVach())
                 .tenSach(sach.getTenSach())
-                .giaBan(sach.getGiaBan())
-                .soLuong(sach.getSoLuong())
+                .giaBan(sach.getGiaBan()) .
+                soLuong(sach.getSoLuong())
+                .soTrang(sach.getSoTrang())
+                .ngonNgu(sach.getNgonNgu())
+                .namXuatBan(sach.getNamXuatBan())
+                .kichThuoc(sach.getKichThuoc())
+                .moTa(sach.getMoTa())
+                .idTheLoai(sach.getTheLoai().getId())
+                .idNxb(sach.getNhaXuatBan().getId())
                 .tenTheLoai(sach.getTheLoai().getTenTheLoai())
                 .tenNxb(sach.getNhaXuatBan().getTenNxb())
                 .duongDanAnh(duongDanAnh)

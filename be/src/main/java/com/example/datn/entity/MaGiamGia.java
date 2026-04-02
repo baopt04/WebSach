@@ -41,6 +41,7 @@ public class MaGiamGia {
 
     @Column(name = "so_luong")
     private Integer soLuong;
+
     @Column(name = "trang_thai")
     @Enumerated(EnumType.STRING)
     private VoucherStatus trangThai;
@@ -50,6 +51,7 @@ public class MaGiamGia {
 
     @Column(name = "ngay_cap_nhat")
     private LocalDateTime ngayCapNhat;
+
     @PrePersist
     protected void onCreate() {
         ngayTao = LocalDateTime.now();

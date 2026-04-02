@@ -8,7 +8,8 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 
-public class TheLoaiDTO {
+public class TacGiaDTO {
     private Integer id;
-    private String tenTheLoai;
+    private String tenTacGia;
+    private String tieuSu;
 }
