@@ -14,19 +14,22 @@ import java.time.LocalDateTime;
 @Builder
 public class SachTacGia {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    @EmbeddedId
+    private SachTacGiaId id;
 
     @ManyToOne
+    @MapsId("idSach")
     @JoinColumn(name = "id_sach")
     private Sach sach;
 
     @ManyToOne
+    @MapsId("idTacGia")
     @JoinColumn(name = "id_tac_gia")
     private TacGia tacGia;
+
     @Column(name = "vai_tro")
     private String vaiTro;
+
     @Column(name = "ngay_tao")
     private LocalDateTime ngayTao;
 
