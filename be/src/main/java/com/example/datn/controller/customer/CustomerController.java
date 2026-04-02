@@ -10,6 +10,7 @@ import com.example.datn.dto.response.TaiKhoanResponse;
 import com.example.datn.service.CustomerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +21,7 @@ import java.util.List;
 @RequestMapping("/api/customer/v1")
 @RequiredArgsConstructor
 public class CustomerController {
-
+    @Autowired
     private final CustomerService customerService;
 
     @GetMapping("/dia-chi")

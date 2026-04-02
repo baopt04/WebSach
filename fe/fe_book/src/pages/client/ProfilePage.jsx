@@ -31,6 +31,7 @@ const ProfilePage = () => {
   const [profileForm, setProfileForm] = useState({
     hoTen: '',
     soDienThoai: '',
+    email: '',
     gioiTinh: true,
     ngaySinh: null,
   });
@@ -62,8 +63,6 @@ const ProfilePage = () => {
         getMyAddresses(),
         getProvinces()
       ]);
-
-
       localStorage.setItem("hoTen", profileRes.hoTen);
       localStorage.setItem("soDienThoai", profileRes.soDienThoai);
       localStorage.setItem("email", profileRes.email);
@@ -94,6 +93,7 @@ const ProfilePage = () => {
     setProfileForm({
       hoTen: profile?.hoTen || '',
       soDienThoai: profile?.soDienThoai || '',
+      email: profile?.email || '',
       gioiTinh: profile?.gioiTinh ?? true,
       ngaySinh: profile?.ngaySinh ? dayjs(profile.ngaySinh, 'DD-MM-YYYY') : null,
     });
@@ -106,13 +106,21 @@ const ProfilePage = () => {
     if (!profileForm.hoTen || profileForm.hoTen.trim().length < 5) {
       errors.hoTen = 'Họ tên phải có ít nhất 5 ký tự';
     }
-
     const phoneRegex = /^(0[3|5|7|8|9])+([0-9]{8})$/;
     if (!profileForm.soDienThoai) {
       errors.soDienThoai = 'Vui lòng nhập số điện thoại';
     } else if (!phoneRegex.test(profileForm.soDienThoai)) {
       errors.soDienThoai = 'Số điện thoại không hợp lệ';
     }
+    if (!profileForm.email) {
+      errors.email = 'Vui lòng nhập email';
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(profileForm.email)) {
+        errors.email = 'Email không hợp lệ';
+      }
+    }
+
 
     if (profileForm.gioiTinh === undefined || profileForm.gioiTinh === null) {
       errors.gioiTinh = 'Vui lòng chọn giới tính';
@@ -142,6 +150,7 @@ const ProfilePage = () => {
       const payload = {
         hoTen: profileForm.hoTen,
         soDienThoai: profileForm.soDienThoai,
+        email: profileForm.email,
         gioiTinh: profileForm.gioiTinh,
         ngaySinh: profileForm.ngaySinh ? profileForm.ngaySinh.format('DD-MM-YYYY') : null
       };
@@ -502,6 +511,9 @@ const ProfilePage = () => {
           <div><label>Số điện thoại</label><Input value={profileForm.soDienThoai} onChange={e => { setProfileForm({ ...profileForm, soDienThoai: e.target.value }); setFormErrors(prev => ({ ...prev, soDienThoai: '' })); }} placeholder="Số điện thoại" />
             {formErrors.soDienThoai && <div style={{ color: 'red' }}>{formErrors.soDienThoai}</div>}</div>
           <div>
+            <div><label>Email</label><Input value={profileForm.email} onChange={e => { setProfileForm({ ...profileForm, email: e.target.value }); setFormErrors(prev => ({ ...prev, email: '' })); }} placeholder="Email" />
+              {formErrors.email && <div style={{ color: 'red' }}>{formErrors.email}</div>}</div>
+            <div></div>
             <label style={{ display: 'block', marginBottom: '8px' }}>Giới tính</label>
             <Radio.Group onChange={e => setProfileForm({ ...profileForm, gioiTinh: e.target.value })} value={profileForm.gioiTinh}>
               <Radio value={true}>Nam</Radio>

@@ -1,16 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Steps, Row, Col, Typography, Table, Spin, Button, message, Divider, Tag, Modal, Form, Input, Select, Timeline, Space } from 'antd';
-import { ArrowLeftOutlined, FormOutlined, FileDoneOutlined, InboxOutlined, CarOutlined, CheckCircleOutlined, CreditCardFilled } from '@ant-design/icons';
+import { ArrowLeftOutlined, FormOutlined, FileDoneOutlined, InboxOutlined, CarOutlined, CheckCircleOutlined, CreditCardFilled, PrinterOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { getHoaDonChiTiet, changeOrderStatus, updateHoaDon, getLichSuHoaDon } from '../../services/hoaDonService';
 import { getProvinces, getDistricts, getWards, calculateShippingFee, calculateLeadTime } from '../../services/GhnApi';
-import StatusTag from '../../components/admin/StatusTag';
+import './OrderDetailAdmin.css';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
 const DANG_CHUAN_BI_HANG = 'DANG_CHUAN_BI_HANG';
+const STATUSES_ALLOW_CANCEL = ['CHO_XAC_NHAN', 'DA_XAC_NHAN', DANG_CHUAN_BI_HANG];
+
+const SHOP_INFO = {
+  name: 'Cửa hàng FPOLY',
+  address: 'Trường cao đẳng FPOLY, đường Trịnh Văn Bô, phường Xuân Phương, TP. Hà Nội',
+  phone: '04532323153',
+};
+
+const formatMoneyVnd = (n) => (Number(n) || 0).toLocaleString('vi-VN');
 
 const OrderDetailAdmin = () => {
   const { id } = useParams();
@@ -41,6 +50,8 @@ const OrderDetailAdmin = () => {
   const [districts, setDistricts] = useState([]);
   const [wards, setWards] = useState([]);
 
+  const autoPrintSlipRef = useRef(false);
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -65,6 +76,27 @@ const OrderDetailAdmin = () => {
       fetchData();
     }
   }, [id]);
+
+  useEffect(() => {
+    document.body.classList.add('admin-order-detail-print-root');
+    return () => document.body.classList.remove('admin-order-detail-print-root');
+  }, []);
+
+  useEffect(() => {
+    autoPrintSlipRef.current = false;
+  }, [id]);
+
+  /* Tự mở hộp thoại in (Ctrl+P) khi mở đơn DA_XAC_NHAN hoặc vừa chuyển sang trạng thái đó */
+  useEffect(() => {
+    if (loading || !orderData) return;
+    if (orderData.hoaDon.trangThai !== 'DA_XAC_NHAN') return;
+    if (autoPrintSlipRef.current) return;
+    const t = setTimeout(() => {
+      autoPrintSlipRef.current = true;
+      window.print();
+    }, 450);
+    return () => clearTimeout(t);
+  }, [loading, id, orderData?.hoaDon?.trangThai, orderData?.hoaDon?.maHoaDon]);
 
   useEffect(() => {
     if (isEditOpen) {
@@ -136,41 +168,80 @@ const OrderDetailAdmin = () => {
     }
   };
 
-  const handleChangeStatusSubmit = async (values) => {
-    try {
-      const current = hoaDon.trangThai;
-      let nextStatus = '';
-      if (current === 'CHO_XAC_NHAN') nextStatus = 'DA_XAC_NHAN';
-      else if (current === 'DA_XAC_NHAN') nextStatus = 'DANG_CHUAN_BI_HANG';
-      else if (current === 'DANG_CHUAN_BI_HANG') nextStatus = 'DANG_GIAO';
-      else if (current === 'DANG_GIAO') nextStatus = 'DA_THANH_TOAN';
-      else if (current === 'DA_THANH_TOAN') nextStatus = 'THANH_CONG';
+  const handleChangeStatusSubmit = (values) => {
+    if (!orderData) return;
+    const current = orderData.hoaDon.trangThai;
+    let nextStatus = '';
+    if (current === 'CHO_XAC_NHAN') nextStatus = 'DA_XAC_NHAN';
+    else if (current === 'DA_XAC_NHAN') nextStatus = 'DANG_CHUAN_BI_HANG';
+    else if (current === DANG_CHUAN_BI_HANG) nextStatus = 'DANG_GIAO';
+    else if (current === 'DANG_GIAO') nextStatus = 'DA_THANH_TOAN';
+    else if (current === 'DA_THANH_TOAN') nextStatus = 'THANH_CONG';
 
-      if (!nextStatus) {
-        message.warning('Không có trạng thái tiếp theo hợp lệ');
-        return;
-      }
-
-      await changeOrderStatus(id, { orderStatus: nextStatus, ghiChu: values.ghiChu });
-      message.success('Chuyển trạng thái đơn hàng thành công');
-      setIsStatusOpen(false);
-      statusForm.resetFields();
-      fetchData();
-    } catch (error) {
-      message.error('Chuyển trạng thái thất bại');
+    if (!nextStatus) {
+      message.warning('Không có trạng thái tiếp theo hợp lệ');
+      return;
     }
+
+    Modal.confirm({
+      title: 'Xác nhận chuyển trạng thái',
+      content: (
+        <div>
+          <p>
+            Chuyển từ <strong>{statusMap[current] || current}</strong> sang{' '}
+            <strong>{statusMap[nextStatus] || nextStatus}</strong>.
+          </p>
+          <p style={{ marginTop: 8, color: '#666', fontSize: 13 }}>
+            Ghi chú: {values.ghiChu}
+          </p>
+          <p style={{ marginTop: 12 }}>Bạn có chắc chắn muốn thực hiện?</p>
+        </div>
+      ),
+      okText: 'Xác nhận',
+      cancelText: 'Quay lại',
+      onOk: async () => {
+        try {
+          await changeOrderStatus(id, { orderStatus: nextStatus, ghiChu: values.ghiChu });
+          message.success('Chuyển trạng thái đơn hàng thành công');
+          setIsStatusOpen(false);
+          statusForm.resetFields();
+          await fetchData();
+        } catch (error) {
+          message.error('Chuyển trạng thái thất bại');
+          throw error;
+        }
+      },
+    });
   };
 
-  const handleCancelSubmit = async (values) => {
-    try {
-      await changeOrderStatus(id, { orderStatus: 'DA_HUY', ghiChu: values.ghiChu });
-      message.success('Hủy đơn hàng thành công');
-      setIsCancelOpen(false);
-      cancelForm.resetFields();
-      fetchData();
-    } catch (error) {
-      message.error('Hủy đơn hàng thất bại');
-    }
+  const handleCancelSubmit = (values) => {
+    Modal.confirm({
+      title: 'Xác nhận hủy đơn hàng',
+      content: (
+        <div>
+          <p>Hành động này không thể hoàn tác.</p>
+          <p style={{ marginTop: 8 }}>
+            Lý do đã nhập: <strong>{values.ghiChu}</strong>
+          </p>
+          <p style={{ marginTop: 12 }}>Bạn có chắc chắn muốn hủy đơn?</p>
+        </div>
+      ),
+      okText: 'Hủy đơn',
+      okButtonProps: { danger: true },
+      cancelText: 'Quay lại',
+      onOk: async () => {
+        try {
+          await changeOrderStatus(id, { orderStatus: 'DA_HUY', ghiChu: values.ghiChu });
+          message.success('Hủy đơn hàng thành công');
+          setIsCancelOpen(false);
+          cancelForm.resetFields();
+          await fetchData();
+        } catch (error) {
+          message.error('Hủy đơn hàng thất bại');
+          throw error;
+        }
+      },
+    });
   };
 
   const handleEditSubmit = async (values) => {
@@ -295,12 +366,82 @@ const OrderDetailAdmin = () => {
 
   const totalPayment = (hoaDon.tongTienHang || 0) + (hoaDon.phiShip || 0) - (hoaDon.giamGia || 0);
 
-  return (
-    <div style={{ padding: '24px', backgroundColor: '#f0f2f5', minHeight: '100vh' }}>
-      <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/admin/orders')} style={{ marginBottom: 16 }}>
-        Quay lại danh sách
-      </Button>
+  const showDeliverySlip = !isCancelled && hoaDon.trangThai === 'DA_XAC_NHAN';
 
+  return (
+    <div className="order-detail-admin-page-root" style={{ padding: '24px', backgroundColor: '#f0f2f5', minHeight: '100vh' }}>
+      {showDeliverySlip && (
+        <div
+          id="admin-order-delivery-slip"
+          className="admin-order-print-slip-host admin-order-delivery-slip-print"
+          aria-hidden="true"
+        >
+          <div className="admin-order-delivery-slip-inner">
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+              <Title level={3} style={{ margin: '0 0 8px' }}>{SHOP_INFO.name}</Title>
+              <Text strong>Mã hóa đơn: </Text>
+              <Text>{hoaDon.maHoaDon}</Text>
+              <span style={{ margin: '0 12px', color: '#d9d9d9' }}>|</span>
+              <Text strong>Ngày đặt hàng: </Text>
+              <Text>{hoaDon.ngayTao ? dayjs(hoaDon.ngayTao).format('DD/MM/YYYY HH:mm') : '--'}</Text>
+            </div>
+
+            <div className="slip-two-col" style={{ marginBottom: 20 }}>
+              <div>
+                <Text strong style={{ display: 'block', marginBottom: 8 }}>Từ</Text>
+                <div><Text strong>{SHOP_INFO.name}</Text></div>
+                <div style={{ marginTop: 6 }}>{SHOP_INFO.address}</div>
+                <div style={{ marginTop: 6 }}>SĐT shop: {SHOP_INFO.phone}</div>
+              </div>
+              <div>
+                <Text strong style={{ display: 'block', marginBottom: 8 }}>Đến</Text>
+                <div><Text strong>{hoaDon.hoTenKhachHang || '—'}</Text></div>
+                <div style={{ marginTop: 6 }}>{hoaDon.diaChiGiaoHang || 'Mua tại quầy'}</div>
+                <div style={{ marginTop: 6 }}>Số điện thoại: {hoaDon.soDienThoai || '—'}</div>
+              </div>
+            </div>
+
+            <Text strong style={{ display: 'block', marginBottom: 8 }}>Thông tin đơn hàng</Text>
+            <div className="slip-items-row slip-items-head">
+              <span>STT</span>
+              <span>Tên sản phẩm</span>
+              <span style={{ textAlign: 'right' }}>SL</span>
+            </div>
+            {(chiTiets || []).map((r, i) => (
+              <div key={r.id ?? i} className="slip-items-row">
+                <span>{i + 1}</span>
+                <span>{r.tenSach}</span>
+                <span style={{ textAlign: 'right' }}>{r.soLuong}</span>
+              </div>
+            ))}
+
+            <div className="slip-two-col" style={{ marginTop: 24 }}>
+              <div>
+                <div style={{ marginBottom: 8 }}>
+                  <Text strong>Tiền thu người nhận: </Text>
+                  <Text strong style={{ fontSize: 16 }}>{formatMoneyVnd(totalPayment > 0 ? totalPayment : 0)}₫</Text>
+                </div>
+                <div>
+                  <Text strong>Ghi chú: </Text>
+                  <Text>{hoaDon.ghiChu?.trim() ? hoaDon.ghiChu : '—'}</Text>
+                </div>
+              </div>
+              <div>
+                <Text strong style={{ display: 'block', marginBottom: 8 }}>Chữ ký người nhận</Text>
+                <div className="slip-signature-box">
+                  <div className="slip-signature-line" />
+                  <div className="slip-signature-note">Xác nhận hàng nguyên vẹn, không móp méo</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="admin-order-no-print">
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/admin/orders')} style={{ marginBottom: 16 }}>
+          Quay lại danh sách
+        </Button>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <Title level={3} style={{ margin: 0 }}>Mã đơn: {hoaDon.maHoaDon} </Title>
         <Space>
@@ -309,9 +450,14 @@ const OrderDetailAdmin = () => {
               Chuyển trạng thái
             </Button>
           )}
-          {!(isCancelled || hoaDon.trangThai === 'DA_GIAO' || hoaDon.trangThai === 'THANH_CONG') && (
+          {!isCancelled && STATUSES_ALLOW_CANCEL.includes(hoaDon.trangThai) && (
             <Button danger onClick={() => setIsCancelOpen(true)}>
               Hủy đơn
+            </Button>
+          )}
+          {showDeliverySlip && (
+            <Button icon={<PrinterOutlined />} onClick={() => window.print()}>
+              In phiếu
             </Button>
           )}
         </Space>
@@ -396,6 +542,7 @@ const OrderDetailAdmin = () => {
           </Card>
         </Col>
       </Row>
+      </div>
 
       <Modal title="Cập nhật trạng thái đơn hàng" open={isStatusOpen} onCancel={() => setIsStatusOpen(false)} onOk={() => statusForm.submit()}>
         <Form form={statusForm} layout="vertical" onFinish={handleChangeStatusSubmit}>

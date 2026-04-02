@@ -9,12 +9,14 @@ import com.example.datn.entity.LichSuDonHang;
 import com.example.datn.entity.Sach;
 import com.example.datn.entity.TaiKhoan;
 import com.example.datn.enums.OrderStatus;
+import com.example.datn.enums.PaymentMethod;
 import com.example.datn.repository.GioHangChiTietRepository;
 import com.example.datn.repository.GioHangRepository;
 import com.example.datn.repository.HoaDonChiTietRepository;
 import com.example.datn.repository.HoaDonRepository;
 import com.example.datn.repository.LichSuDonHangRepository;
 import com.example.datn.repository.SachRepository;
+import com.example.datn.service.HoaDonOrderMailService;
 import com.example.datn.service.VNPayService;
 import com.example.datn.util.Config;
 import jakarta.servlet.http.HttpServletRequest;
@@ -42,6 +44,7 @@ public class VNPayServiceImpl implements VNPayService {
     private final LichSuDonHangRepository lichSuDonHangRepository;
     private final GioHangRepository gioHangRepository;
     private final GioHangChiTietRepository gioHangChiTietRepository;
+    private final HoaDonOrderMailService hoaDonOrderMailService;
 
     private static String vnpEncode(String value) throws UnsupportedEncodingException {
         return URLEncoder.encode(value, StandardCharsets.US_ASCII.toString());
@@ -198,6 +201,10 @@ public class VNPayServiceImpl implements VNPayService {
             }
 
             log.info("[VNPay Callback] Thanh toán thành công, đơn {} -> DA_XAC_NHAN", txnRef);
+
+            if (hoaDon.getPhuongThuc() == PaymentMethod.CHUYEN_KHOAN) {
+                hoaDonOrderMailService.sendOrderPlacedEmailFromPersistedOrder(hoaDon);
+            }
             return true;
 
         } catch (Exception e) {

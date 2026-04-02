@@ -16,7 +16,7 @@ import {
 import { getMyOrderDetail } from '../../services/client/ProfileCustomer';
 import { cancelHoaDon, updateHoaDonInfo } from '../../services/client/HoaDonCustomerService';
 import { getProvinces, getDistricts, getWards, calculateShippingFee, calculateLeadTime } from '../../services/GhnApi';
-import { formatDate } from '../../utils/format';
+import { formatDate, formatDateTime } from '../../utils/format';
 import './OrderDetailPage.css';
 
 const { Option } = Select;
@@ -28,7 +28,10 @@ const stepConfig = {
   DANG_GIAO: { title: 'Đang giao', icon: <CarOutlined /> },
   DA_THANH_TOAN: { title: 'Đã thanh toán', icon: <CreditCardFilled /> },
   THANH_CONG: { title: 'Thành công', icon: <CheckCircleOutlined /> },
-  DA_HUY: { title: 'Đã hủy', icon: <CloseCircleOutlined /> },
+  DA_HUY: {
+    title: <span style={{ color: '#ff4d4f' }}>Đã hủy</span>,
+    icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />
+  },
 };
 
 const buildSteps = (lichSu = []) => {
@@ -37,7 +40,7 @@ const buildSteps = (lichSu = []) => {
     .sort((a, b) => new Date(a.ngayTao) - new Date(b.ngayTao))
     .map(item => ({
       title: stepConfig[item.trangThai]?.title || item.trangThai,
-      description: formatDate(item.ngayTao),
+      description: formatDateTime(item.ngayTao),
       icon: stepConfig[item.trangThai]?.icon,
     }));
 };
@@ -49,7 +52,7 @@ const statusConfig = {
   DANG_GIAO: { label: 'Đang giao', color: 'cyan', text: 'Đang giao' },
   DA_THANH_TOAN: { label: 'Đã thanh toán', color: 'purple', text: 'Đã thanh toán' },
   THANH_CONG: { label: 'Thành công', color: 'success', text: 'Thành công' },
-  DA_HUY: { label: 'Đã hủy', color: 'error', text: 'Đã hủy' },
+  DA_HUY: { label: 'Đã hủy', color: '#ff4d4f', text: 'Đã hủy' },
 };
 
 const CAN_CANCEL_STATUSES = ['CHO_XAC_NHAN'];
@@ -108,7 +111,10 @@ const OrderDetailPage = () => {
     }
     try {
       setCancelLoading(true);
-      await cancelHoaDon(id, cancelNote.trim());
+      await cancelHoaDon(id, {
+        ghiChu: cancelNote.trim(),
+        orderStatus: 'DA_HUY'
+      });
       message.success("Hủy đơn hàng thành công!");
       setIsCancelModalOpen(false);
       setCancelNote('');
@@ -122,7 +128,6 @@ const OrderDetailPage = () => {
 
   const openUpdateModal = () => {
     const { hoaDon } = orderData;
-    // Parse ngayNhan từ API (định dạng DD-MM-YYYY hoặc ISO)
     let ngayNhanValue = null;
     if (hoaDon.ngayNhan) {
       const parsed = dayjs(hoaDon.ngayNhan, 'DD-MM-YYYY', true);
@@ -183,7 +188,6 @@ const OrderDetailPage = () => {
       const fee = Math.round(feeRes?.data?.total || 0);
       setCalculatedShip(fee);
 
-      // leadtime trả về unix timestamp (giây)
       const leadTimestamp = leadRes?.data?.leadtime;
       let deliveryStr = '';
       if (leadTimestamp) {
@@ -192,7 +196,6 @@ const OrderDetailPage = () => {
       }
       setEstimatedDelivery(deliveryStr);
 
-      // Điền vào 2 trường hiển thị (disabled)
       updateForm.setFieldsValue({
         phiShipHienThi: fee > 0 ? fee.toLocaleString('vi-VN') + '₫' : 'Chưa tính',
         ngayNhanHienThi: deliveryStr || 'Không xác định',
@@ -312,7 +315,7 @@ const OrderDetailPage = () => {
         <div className="od-id-status">
           <span className="od-id">Mã đơn hàng: <strong>{hoaDon.maHoaDon}</strong></span>
           <span className="od-split">|</span>
-          <span className="od-status-text" style={{ color: currentStatusConfig.color === 'default' ? 'inherit' : currentStatusConfig.color }}>
+          <span className="od-status-text" style={{ color: currentStatusConfig.color === 'red' ? 'red' : currentStatusConfig.color }}>
             {currentStatusConfig.text.toUpperCase()}
           </span>
           {CAN_CANCEL_STATUSES.includes(hoaDon.trangThai) && (
@@ -325,6 +328,7 @@ const OrderDetailPage = () => {
 
       <div className="od-section od-timeline">
         <Steps
+          style={{ color: '#ff4d4f' }}
           current={currentStep}
           labelPlacement="vertical"
           items={buildSteps(orderData?.lichSuDonHang)}

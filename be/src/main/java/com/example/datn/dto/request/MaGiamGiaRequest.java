@@ -42,7 +42,5 @@ public class MaGiamGiaRequest {
     @Min(value = 1, message = "Số lượng phải lớn hơn 0")
     private Integer soLuong;
 
-    // Có thể bỏ qua valid trangThai vì BE sẽ tự tính bằng ngày,
-    // tuy nhiên vẫn giữ để map data.
     private VoucherStatus trangThai;
 }

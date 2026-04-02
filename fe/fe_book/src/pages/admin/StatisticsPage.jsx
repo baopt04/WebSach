@@ -1,98 +1,182 @@
-import { useState } from 'react';
-import { Card, Row, Col, Select, DatePicker, Table, Typography, Tag } from 'antd';
-import { BarChartOutlined, RiseOutlined, TrophyOutlined } from '@ant-design/icons';
+import { useState, useEffect } from 'react';
+import { Card, Row, Col, Select, Table, Typography, Tag, Spin, Statistic, Button } from 'antd';
+import { BarChartOutlined, RiseOutlined, TrophyOutlined, ShoppingCartOutlined, CloseCircleOutlined, CalendarOutlined, FileExcelOutlined } from '@ant-design/icons';
 import PageHeader from '../../components/admin/PageHeader';
+import * as StatisticalService from '../../services/StatisticalService';
+import * as ExcelService from '../../services/ExcelService';
+import dayjs from 'dayjs';
+import { message } from 'antd';
 import './AdminPage.css';
 import './StatisticsPage.css';
 
 const { Option } = Select;
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
-// Dữ liệu doanh thu theo tháng, quý
-const monthlyData = [
-  { month: 'T1', revenue: 32000000, orders: 145, customers: 130 },
-  { month: 'T2', revenue: 28000000, orders: 120, customers: 112 },
-  { month: 'T3', revenue: 41000000, orders: 185, customers: 168 },
-  { month: 'T4', revenue: 38000000, orders: 170, customers: 155 },
-  { month: 'T5', revenue: 45000000, orders: 210, customers: 195 },
-  { month: 'T6', revenue: 52000000, orders: 238, customers: 221 },
-  { month: 'T7', revenue: 48000000, orders: 215, customers: 198 },
-  { month: 'T8', revenue: 61000000, orders: 278, customers: 256 },
-  { month: 'T9', revenue: 55000000, orders: 248, customers: 230 },
-  { month: 'T10', revenue: 67000000, orders: 305, customers: 280 },
-  { month: 'T11', revenue: 72000000, orders: 325, customers: 300 },
-  { month: 'T12', revenue: 48500000, orders: 218, customers: 202 },
-];
-
-const maxRevenue = Math.max(...monthlyData.map((d) => d.revenue));
-
-// Top sản phẩm
-const topProducts = Array.from({ length: 10 }, (_, i) => ({
-  key: i + 1,
-  rank: i + 1,
-  title: ['Đắc Nhân Tâm', 'Nhà Giả Kim', 'Sapiens', 'Tư Duy Nhanh Chậm', 'Muôn Kiếp Nhân Sinh', 'Dám Nghĩ Lớn', 'Người Giàu Có Nhất Thành Babylon', 'Tôi Thấy Hoa Vàng...', 'Mắt Biếc', 'Cà Phê Cùng Tony'][i],
-  category: ['Tâm lý', 'Tiểu thuyết', 'Lịch sử', 'Tâm lý', 'Tâm linh', 'Kỹ năng', 'Tài chính', 'Văn học VN', 'Văn học VN', 'Văn học VN'][i],
-  sold: [215, 198, 167, 143, 128, 115, 98, 87, 76, 65][i],
-  revenue: [32250000, 29700000, 43420000, 37180000, 22400000, 17250000, 14700000, 9570000, 8360000, 9750000][i],
-}));
+const formatVND = (value) => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+  }).format(value || 0).replace('₫', '₫');
+};
 
 const topColumns = [
-  { title: '#', dataIndex: 'rank', key: 'rank', width: 50, align: 'center',
-    render: (v) => (
-      <div style={{ width: 28, height: 28, borderRadius: '50%', background: v <= 3 ? ['#ffd700','#c0c0c0','#cd7f32'][v-1] : '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: 'auto', fontWeight: 700, color: v <= 3 ? '#fff' : '#595959', fontSize: 13 }}>{v}</div>
+  {
+    title: 'STT', dataIndex: 'idSach', key: 'idSach', width: 50, align: 'center',
+    render: (_, __, index) => (
+      <div >{index + 1}</div>
     ),
   },
-  { title: 'Tên sách', dataIndex: 'title', key: 'title', render: (v) => <Text strong>{v}</Text> },
-  { title: 'Thể loại', dataIndex: 'category', key: 'category' },
-  { title: 'Đã bán', dataIndex: 'sold', key: 'sold', align: 'center', render: (v) => <Tag color="blue">{v}</Tag> },
-  { title: 'Doanh thu', dataIndex: 'revenue', key: 'revenue', render: (v) => <Text strong style={{ color: '#52c41a' }}>{v.toLocaleString('vi-VN')}₫</Text> },
-];
-
-// Thống kê theo thể loại
-const categoryStats = [
-  { name: 'Tâm lý - Kỹ năng', percent: 28, color: '#4096ff' },
-  { name: 'Tiểu thuyết', percent: 22, color: '#52c41a' },
-  { name: 'Văn học nước ngoài', percent: 18, color: '#fa8c16' },
-  { name: 'Thiếu nhi', percent: 12, color: '#722ed1' },
-  { name: 'Lịch sử', percent: 10, color: '#eb2f96' },
-  { name: 'Khác', percent: 10, color: '#bfbfbf' },
+  { title: 'Tên sách', dataIndex: 'tenSach', key: 'tenSach', render: (v) => <Text strong>{v}</Text> },
+  { title: 'Thể loại', dataIndex: 'tenTheLoai', key: 'tenTheLoai' },
+  { title: 'Đã bán', dataIndex: 'soLuongDaBan', key: 'soLuongDaBan', align: 'center', render: (v) => <Tag color="blue">{v}</Tag> },
+  { title: 'Doanh thu', dataIndex: 'doanhThu', key: 'doanhThu', render: (v) => <Text strong style={{ color: '#52c41a' }}>{formatVND(v)}</Text> },
 ];
 
 const StatisticsPage = () => {
   const [period, setPeriod] = useState('month');
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalOrders: 0,
+    totalRevenue: 0,
+    monthlyRevenue: 0,
+    monthlyOrders: 0,
+    cancelledOrders: 0,
+    topBooks: [],
+    yearlyChartData: []
+  });
 
-  const totalRevenue = monthlyData.reduce((sum, d) => sum + d.revenue, 0);
-  const totalOrders = monthlyData.reduce((sum, d) => sum + d.orders, 0);
+  const currentMonth = dayjs().month() + 1;
+  const currentYear = dayjs().year();
+
+  useEffect(() => {
+    fetchStatistics();
+  }, []);
+
+  const fetchStatistics = async () => {
+    setLoading(true);
+    try {
+      const [
+        summary,
+        cancelledOrdersCount,
+        topBooksList
+      ] = await Promise.all([
+        StatisticalService.getSummaryStatistics(),
+        StatisticalService.getTotalCancelledOrders(),
+        StatisticalService.getTop10BestSellingBooks()
+      ]);
+
+      // Calculate current month stats from chiTietTheoThang
+      const currentMonthData = summary.chiTietTheoThang?.find(
+        d => d.thang === currentMonth && d.nam === currentYear
+      ) || { tongDoanhThu: 0, tongDonHang: 0 };
+
+      // Sort chart data chronologically
+      const sortedChartData = [...(summary.chiTietTheoThang || [])].sort((a, b) => {
+        if (a.nam !== b.nam) return a.nam - b.nam;
+        return a.thang - b.thang;
+      });
+
+      setStats({
+        totalOrders: summary.tongDonHang || 0,
+        totalRevenue: summary.tongDoanhThu || 0,
+        monthlyRevenue: currentMonthData.tongDoanhThu || 0,
+        monthlyOrders: currentMonthData.tongDonHang || 0,
+        cancelledOrders: cancelledOrdersCount || 0,
+        topBooks: topBooksList || [],
+        yearlyChartData: sortedChartData
+      });
+    } catch (error) {
+      console.error('Failed to fetch statistics:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExportExcel = () => {
+    const success = ExcelService.exportStatisticsToExcel(stats);
+    if (success) {
+      message.success('Xuất file Excel thành công!');
+    } else {
+      message.error('Lỗi khi xuất file Excel.');
+    }
+  };
+
+  const maxRevenue = Math.max(...(stats.yearlyChartData.map(d => d.tongDoanhThu) || [0]), 1);
+  const maxOrders = Math.max(...(stats.yearlyChartData.map(d => d.tongDonHang) || [0]), 1);
+
+  if (loading) {
+    return (
+      <div className="admin-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+        <Spin size="large" tip="Đang tải thống kê..." />
+      </div>
+    );
+  }
+
+  const kpis = [
+    {
+      label: 'Tổng doanh thu',
+      value: formatVND(stats.totalRevenue),
+      color: '#4096ff',
+      icon: <RiseOutlined />,
+    },
+    {
+      label: 'Tổng đơn hàng',
+      value: stats.totalOrders.toLocaleString(),
+      color: '#52c41a',
+      icon: <ShoppingCartOutlined />,
+    },
+    {
+      label: `Doanh thu tháng ${currentMonth}`,
+      value: formatVND(stats.monthlyRevenue),
+      color: '#fa8c16',
+      icon: <CalendarOutlined />,
+    },
+    {
+      label: `Đơn hàng tháng ${currentMonth}`,
+      value: stats.monthlyOrders.toLocaleString(),
+      color: '#722ed1',
+      icon: <BarChartOutlined />,
+    },
+    {
+      label: 'Đơn hàng bị hủy',
+      value: stats.cancelledOrders.toLocaleString(),
+      color: '#ff4d4f',
+      icon: <CloseCircleOutlined />,
+      bg: 'linear-gradient(135deg, #fff1f0 0%, #ffccc7 100%)'
+    }
+  ];
 
   return (
     <div className="admin-page">
       <PageHeader
-        title="Báo cáo Thống kê"
+        title=""
         showAdd={false}
         extra={
-          <Select value={period} onChange={setPeriod} style={{ width: 140 }}>
-            <Option value="month">Theo tháng</Option>
-            <Option value="quarter">Theo quý</Option>
-            <Option value="year">Theo năm</Option>
-          </Select>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <Button
+              type="primary"
+              icon={<FileExcelOutlined />}
+              onClick={handleExportExcel}
+              style={{ background: '#52c41a', borderColor: '#52c41a' }}
+            >
+              Xuất báo cáo Excel
+            </Button>
+
+          </div>
         }
       />
 
-      {/* KPI tổng hợp */}
-      <Row gutter={[16, 16]}>
-        {[
-          { label: 'Tổng doanh thu năm', value: `${(totalRevenue / 1000000).toFixed(0)}tr ₫`, color: '#4096ff', icon: <RiseOutlined /> },
-          { label: 'Tổng đơn hàng', value: totalOrders, color: '#52c41a', icon: <BarChartOutlined /> },
-          { label: 'Doanh thu TB / tháng', value: `${(totalRevenue / 12 / 1000000).toFixed(1)}tr ₫`, color: '#fa8c16', icon: <RiseOutlined /> },
-          { label: 'Đơn hàng TB / tháng', value: Math.round(totalOrders / 12), color: '#722ed1', icon: <TrophyOutlined /> },
-        ].map((item, i) => (
-          <Col xs={24} sm={12} lg={6} key={i}>
-            <Card bordered={false} className="admin-card stat-kpi-card">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ fontSize: 24, color: item.color }}>{item.icon}</span>
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        {kpis.map((item, i) => (
+          <Col xs={24} sm={12} lg={4.8} key={i} style={{ flexBasis: i < 5 ? '20%' : 'auto', maxWidth: i < 5 ? '20%' : '100%' }}>
+            <Card bordered={false} className="admin-card stat-kpi-card" style={{ background: item.bg, border: 'none' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 24, color: item.color, background: '#ffffffcc', padding: 8, borderRadius: 8, display: 'flex' }}>{item.icon}</span>
+                </div>
                 <div>
-                  <div style={{ color: '#8c8c8c', fontSize: 13 }}>{item.label}</div>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: item.color }}>{item.value}</div>
+                  <div style={{ color: '#595959', fontSize: 13, fontWeight: 500 }}>{item.label}</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: '#262626', marginTop: 4 }}>{item.value}</div>
                 </div>
               </div>
             </Card>
@@ -100,45 +184,112 @@ const StatisticsPage = () => {
         ))}
       </Row>
 
-      {/* Biểu đồ */}
       <Row gutter={[16, 16]}>
-        <Col xs={24} lg={16}>
-          <Card title={<><BarChartOutlined /> Doanh thu theo tháng (2026)</>} bordered={false} className="admin-card">
-            <div className="stat-bar-chart">
-              {monthlyData.map((d) => (
-                <div key={d.month} className="stat-bar-item">
-                  <div className="stat-bar-value">{(d.revenue / 1000000).toFixed(0)}tr</div>
-                  <div className="stat-bar" style={{ height: `${(d.revenue / maxRevenue) * 180}px` }} />
-                  <div className="stat-bar-orders">{d.orders} đơn</div>
-                  <div className="stat-bar-label">{d.month}</div>
+        <Col xs={24} lg={stats.topBooks.length > 0 ? 16 : 24}>
+          <Card
+            title={<><BarChartOutlined /> Biến động doanh thu & đơn hàng theo tháng</>}
+            bordered={false}
+            className="admin-card"
+            extra={<Tag color="blue">Dữ liệu tổng hợp</Tag>}
+          >
+            <div className="stat-bar-chart" style={{ height: 320, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', paddingTop: 60, overflowX: 'auto', paddingBottom: 10 }}>
+              {stats.yearlyChartData.map((d) => (
+                <div key={`${d.nam}-${d.thang}`} className="stat-bar-item" style={{ minWidth: 80, textAlign: 'center', position: 'relative', padding: '0 10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 4, height: 200 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <div className="stat-bar-value" style={{ fontSize: 10, color: '#4096ff', marginBottom: 4, fontWeight: 'bold' }}>
+                        {d.tongDoanhThu > 0 ? `${(d.tongDoanhThu / 1000).toFixed(0)}k` : ''}
+                      </div>
+                      <div
+                        className="stat-bar"
+                        style={{
+                          height: `${(d.tongDoanhThu / maxRevenue) * 180}px`,
+                          width: '20px',
+                          background: 'linear-gradient(to top, #4096ff, #bae0ff)',
+                          borderRadius: '4px 4px 0 0',
+                          minHeight: d.tongDoanhThu > 0 ? 2 : 0,
+                          transition: 'height 0.3s'
+                        }}
+                        title={`Doanh thu: ${formatVND(d.tongDoanhThu)}`}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <div className="stat-bar-value" style={{ fontSize: 10, color: '#52c41a', marginBottom: 4, fontWeight: 'bold' }}>
+                        {d.tongDonHang > 0 ? d.tongDonHang : ''}
+                      </div>
+                      <div
+                        className="stat-bar"
+                        style={{
+                          height: `${(d.tongDonHang / maxOrders) * 180}px`,
+                          width: '12px',
+                          background: 'linear-gradient(to top, #52c41a, #b7eb8f)',
+                          borderRadius: '3px 3px 0 0',
+                          minHeight: d.tongDonHang > 0 ? 2 : 0,
+                          transition: 'height 0.3s'
+                        }}
+                        title={`Đơn hàng: ${d.tongDonHang}`}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="stat-bar-label" style={{ marginTop: 12, fontSize: 12, fontWeight: 600, color: (d.thang === currentMonth && d.nam === currentYear) ? '#4096ff' : '#595959' }}>
+                    T{d.thang}/{d.nam}
+                  </div>
                 </div>
               ))}
+            </div>
+            <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center', gap: 24, color: '#8c8c8c', fontSize: 12 }}>
+              <span>
+                <div style={{ display: 'inline-block', width: 12, height: 12, background: '#4096ff', marginRight: 8, borderRadius: 2 }}></div>
+                Doanh thu (Nghìn VNĐ)
+              </span>
+              <span>
+                <div style={{ display: 'inline-block', width: 12, height: 12, background: '#52c41a', marginRight: 8, borderRadius: 2 }}></div>
+                Số lượng đơn hàng
+              </span>
             </div>
           </Card>
         </Col>
 
-        <Col xs={24} lg={8}>
-          <Card title={<><TrophyOutlined /> Doanh thu theo thể loại</>} bordered={false} className="admin-card" style={{ height: '100%' }}>
-            <div className="stat-category-list">
-              {categoryStats.map((c, i) => (
-                <div key={i} className="stat-category-item">
-                  <div className="stat-category-top">
-                    <span style={{ color: c.color, fontWeight: 600 }}>{c.name}</span>
-                    <span style={{ color: c.color, fontWeight: 700 }}>{c.percent}%</span>
-                  </div>
-                  <div className="stat-category-bar">
-                    <div className="stat-category-fill" style={{ width: `${c.percent}%`, background: c.color }} />
-                  </div>
+        {stats.topBooks.length > 0 && (
+          <Col xs={24} lg={8}>
+            <Card title={<><TrophyOutlined /> Hiệu suất bán hàng</>} bordered={false} className="admin-card" style={{ height: '100%' }}>
+              <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                <Statistic
+                  title="Doanh thu bình quân / Đơn hàng"
+                  value={stats.totalOrders > 0 ? stats.totalRevenue / stats.totalOrders : 0}
+                  formatter={(v) => formatVND(v)}
+                  valueStyle={{ color: '#fa8c16' }}
+                />
+                <div style={{ marginTop: 24 }}>
+                  <Statistic
+                    title="Tỷ lệ hủy đơn"
+                    value={stats.totalOrders > 0 ? (stats.cancelledOrders / (stats.totalOrders + stats.cancelledOrders)) * 100 : 0}
+                    suffix="%"
+                    precision={1}
+                    valueStyle={{ color: '#ff4d4f' }}
+                  />
                 </div>
-              ))}
-            </div>
-          </Card>
-        </Col>
+              </div>
+            </Card>
+          </Col>
+        )}
       </Row>
 
-      {/* Top sản phẩm */}
-      <Card title={<><TrophyOutlined /> Top 10 sách bán chạy</>} bordered={false} className="admin-card">
-        <Table columns={topColumns} dataSource={topProducts} pagination={false} size="small" />
+      <Card
+        title={<><TrophyOutlined /> Top 10 sách bán chạy nhất</>}
+        bordered={false}
+        className="admin-card"
+        style={{ marginTop: 24 }}
+        extra={<Tag color="gold">Sản phẩm tiêu biểu</Tag>}
+      >
+        <Table
+          columns={topColumns}
+          dataSource={stats.topBooks.map((item, index) => ({ ...item, key: index }))}
+          pagination={false}
+          size="middle"
+        />
       </Card>
     </div>
   );

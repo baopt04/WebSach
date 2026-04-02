@@ -34,7 +34,6 @@ public class Config {
             if (ipAdress == null) {
                 ipAdress = request.getRemoteAddr();
             }
-            // VNPay integrations commonly expect IPv4; localhost in Spring often becomes IPv6 (::1).
             if ("0:0:0:0:0:0:0:1".equals(ipAdress) || "::1".equals(ipAdress)) {
                 ipAdress = "127.0.0.1";
             }

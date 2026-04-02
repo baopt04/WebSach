@@ -83,3 +83,11 @@ export const searchHoaDonByDate = async (tuNgay, denNgay) => {
         throw handleError(error);
     }
 };
+export const syntheticHoaDon = async () => {
+    try {
+        const res = await axiosClient.get(`${BASE}/tong-hop`);
+        return res.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};

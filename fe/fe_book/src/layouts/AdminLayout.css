@@ -190,3 +190,31 @@
     display: none;
   }
 }
+
+/* In từ trang chi tiết đơn: chỉ nội dung phiếu, không in sidebar/header admin */
+@media print {
+  body.admin-order-detail-print-root .admin-sider,
+  body.admin-order-detail-print-root .admin-header {
+    display: none !important;
+  }
+
+  body.admin-order-detail-print-root .admin-main {
+    margin-left: 0 !important;
+  }
+
+  body.admin-order-detail-print-root .admin-content {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
+    min-height: 0 !important;
+  }
+
+  body.admin-order-detail-print-root .admin-content-inner {
+    padding: 0 !important;
+    max-width: none !important;
+  }
+
+  body.admin-order-detail-print-root .admin-layout {
+    min-height: 0 !important;
+  }
+}

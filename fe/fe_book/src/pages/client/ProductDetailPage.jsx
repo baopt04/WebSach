@@ -62,7 +62,6 @@ const ProductInfo = ({ product }) => {
         await addCartItem({ idSach: product.id, soLuong: qty });
         message.success("Thêm vào giỏ hàng thành công!");
         await fetchCartCount();
-        // navigate('/cart');
       } catch (error) {
         console.error(error);
         message.error(error.response?.data?.message || error.message || "Lỗi khi thêm vào giỏ hàng");

@@ -42,7 +42,6 @@ const CartPage = () => {
   const [paymentMethod, setPaymentMethod] = useState('cod');
   const [termsAccepted, setTermsAccepted] = useState(true);
 
-  // Address logic
   const isLoggedIn = !!localStorage.getItem("token");
   const [profile, setProfile] = useState(null);
   const [addresses, setAddresses] = useState([]);
@@ -136,7 +135,6 @@ const CartPage = () => {
           setItems([]);
         }
       } else {
-        // Guest: đọc từ localStorage
         const guestCart = JSON.parse(localStorage.getItem('guestCart') || '[]');
         setItems(guestCart);
       }
@@ -208,7 +206,6 @@ const CartPage = () => {
           const res = await getEligibleVouchers(sumAmount);
           const list = res || [];
           setVouchers(list);
-          // Nếu voucher đang chọn không còn hợp lệ thì reset
           if (selectedVoucherId && !list.find(v => v.id === selectedVoucherId)) {
             setSelectedVoucherId(null);
           }
@@ -222,7 +219,6 @@ const CartPage = () => {
       }
     };
     fetchVouchers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sumAmount]);
 
   useEffect(() => {
@@ -283,7 +279,6 @@ const CartPage = () => {
   const handleUpdateQty = async (idGioHangChiTiet, val) => {
     if (val < 1) return;
     if (!isLoggedIn) {
-      // Guest: cập nhật localStorage
       const guestCart = JSON.parse(localStorage.getItem('guestCart') || '[]');
       const updated = guestCart.map(item =>
         item.idGioHangChiTiet === idGioHangChiTiet ? { ...item, soLuong: val } : item
@@ -500,7 +495,6 @@ const CartPage = () => {
     },
   ];
 
-  // Address Modal handlers
   const openAddAddressModal = () => {
     setAddressForm({
       id: null,

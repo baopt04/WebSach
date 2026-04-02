@@ -342,6 +342,9 @@ public class CustomerServiceImpl implements CustomerService {
         if (taiKhoanRepository.existsBySoDienThoaiAndIdNot(request.getSoDienThoai(), taiKhoan.getId())) {
             throw new AppException(HttpStatus.BAD_REQUEST, "Số điện thoại đã tồn tại ở tài khoản khác");
         }
+        if (taiKhoanRepository.existsByEmailAndIdNot(request.getEmail(), taiKhoan.getId())) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Email đã tồn tại ở tài khoản khác");
+        }
 
 
         if (request.getNgaySinh() != null) {
@@ -355,6 +358,7 @@ public class CustomerServiceImpl implements CustomerService {
         taiKhoan.setSoDienThoai(request.getSoDienThoai());
         taiKhoan.setGioiTinh(request.getGioiTinh());
         taiKhoan.setNgaySinh(request.getNgaySinh());
+        taiKhoan.setEmail(request.getEmail());
         taiKhoan.setNgayCapNhat(LocalDateTime.now());
 
         TaiKhoan updated = taiKhoanRepository.save(taiKhoan);

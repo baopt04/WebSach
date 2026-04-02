@@ -1,6 +1,7 @@
 package com.example.datn.service.impl;
 
 
+import com.example.datn.dto.mail.OrderMailLine;
 import com.example.datn.dto.request.HoaDonChiTietRequest;
 import com.example.datn.dto.request.HoaDonCreateRequest;
 import com.example.datn.dto.request.HoaDonUpdateRequest;
@@ -31,6 +32,7 @@ import com.example.datn.repository.MaGiamGiaRepository;
 import com.example.datn.repository.SachHinhAnhRepository;
 import com.example.datn.repository.SachRepository;
 import com.example.datn.repository.TaiKhoanRepository;
+import com.example.datn.service.HoaDonOrderMailService;
 import com.example.datn.service.HoaDonService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -38,6 +40,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -56,6 +59,7 @@ public class HoaDonServiceImpl implements HoaDonService {
     private final MaGiamGiaChiTietRepository maGiamGiaChiTietRepository;
     private final GioHangRepository gioHangRepository;
     private final GioHangChiTietRepository gioHangChiTietRepository;
+    private final HoaDonOrderMailService hoaDonOrderMailService;
 
     @Override
     public List<HoaDonResponse> getAllHoaDon() {
@@ -207,6 +211,12 @@ public class HoaDonServiceImpl implements HoaDonService {
                 .build();
         lichSuDonHangRepository.save(lichSu);
 
+        if (oldStatus == OrderStatus.CHO_XAC_NHAN
+                && newStatus == OrderStatus.DA_XAC_NHAN
+                && hoaDon.getPhuongThuc() == PaymentMethod.CHUYEN_KHOAN) {
+            hoaDonOrderMailService.sendOrderPlacedEmailFromPersistedOrder(hoaDon);
+        }
+
         return HoaDonResponse.builder()
                 .id(hoaDon.getId())
                 .maHoaDon(hoaDon.getMaHoaDon())
@@ -352,11 +362,12 @@ public class HoaDonServiceImpl implements HoaDonService {
             }
         }
 
+        List<OrderMailLine> mailLines = new ArrayList<>();
+        boolean guiMailNgayLucTaoDon = request.getPhuongThucThanhToan() != PaymentMethod.CHUYEN_KHOAN;
         if (request.getChiTiets() != null) {
             for (HoaDonChiTietRequest ctReq : request.getChiTiets()) {
                 Sach sach = sachRepository.findById(ctReq.getIdSach()).orElse(null);
                 
-                // Nếu thanh toán VNPay thì trừ luôn tồn kho
                 if (sach != null && initialStatus == OrderStatus.DA_XAC_NHAN) {
                     int soLuongMoi = sach.getSoLuong() - ctReq.getSoLuong();
                     if (soLuongMoi < 0) soLuongMoi = 0;
@@ -374,6 +385,12 @@ public class HoaDonServiceImpl implements HoaDonService {
                         .ngayCapNhat(LocalDateTime.now())
                         .build();
                 hoaDonChiTietRepository.save(chiTiet);
+
+                if (guiMailNgayLucTaoDon) {
+                    String tenSach = sach != null && sach.getTenSach() != null ? sach.getTenSach() : "Sách #" + ctReq.getIdSach();
+                    BigDecimal thanhTienDong = ctReq.getDonGia().multiply(BigDecimal.valueOf(ctReq.getSoLuong()));
+                    mailLines.add(new OrderMailLine(tenSach, ctReq.getSoLuong(), ctReq.getDonGia(), thanhTienDong));
+                }
             }
 
             // Xóa các sản phẩm đã mua khỏi giỏ hàng chi tiết của khách hàng
@@ -398,6 +415,10 @@ public class HoaDonServiceImpl implements HoaDonService {
                 .build();
         lichSuDonHangRepository.save(lichSu);
 
+        if (guiMailNgayLucTaoDon && coEmailDeGui(hoaDon.getEmail())) {
+            hoaDonOrderMailService.sendOrderPlacedEmail(hoaDon, mailLines, maGiamGia);
+        }
+
         // Trả về maHoaDon để FE dùng khi gọi API tạo URL VNPay
         return HoaDonResponse.builder()
                 .id(hoaDon.getId())
@@ -405,6 +426,14 @@ public class HoaDonServiceImpl implements HoaDonService {
                 .hoTenKhachHang(hoaDon.getHoTen())
                 .trangThai(hoaDon.getTrangThai())
                 .build();
+    }
+
+    private static boolean coEmailDeGui(String email) {
+        if (email == null) {
+            return false;
+        }
+        String t = email.trim();
+        return !t.isEmpty() && t.contains("@");
     }
 
     @Override
@@ -415,6 +444,15 @@ public class HoaDonServiceImpl implements HoaDonService {
         if (hoaDon.getTrangThai() != OrderStatus.CHO_XAC_NHAN) {
             throw new RuntimeException("Chỉ có thể hủy đơn hàng khi trạng thái là Chờ xác nhận. Trạng thái hiện tại: " + hoaDon.getTrangThai());
         }
+
+        // Hoàn lại mã giảm giá nếu có
+        maGiamGiaChiTietRepository.findFirstByHoaDon_Id(idHoaDon).ifPresent(mgct -> {
+            MaGiamGia mgg = mgct.getMaGiamGia();
+            if (mgg != null) {
+                mgg.setSoLuong(mgg.getSoLuong() + 1);
+                maGiamGiaRepository.save(mgg);
+            }
+        });
 
         hoaDon.setTrangThai(OrderStatus.DA_HUY);
         hoaDon.setNgayCapNhat(LocalDateTime.now());
@@ -434,7 +472,8 @@ public class HoaDonServiceImpl implements HoaDonService {
                 .taiKhoan(khachHang)
                 .hoaDon(hoaDon)
                 .trangThai(OrderStatus.DA_HUY)
-                .ghiChu(request.getGhiChu() != null ? request.getGhiChu() : "Khách hàng hủy đơn hàng")
+                .ghiChu(request.getGhiChu() != null && !request.getGhiChu().trim().isEmpty() 
+                        ? request.getGhiChu() : "Khách hàng hủy đơn hàng")
                 .ngayTao(LocalDateTime.now())
                 .build();
         lichSuDonHangRepository.save(lichSu);

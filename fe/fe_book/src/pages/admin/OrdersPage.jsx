@@ -65,7 +65,7 @@ const OrdersPage = () => {
   const handleSearchDate = async (dates) => {
     setDateFilter(dates);
     setCurrentPage(1);
-    setSearch(''); // Clear search keyword when picking date
+    setSearch('');
     if (!dates || dates.length === 0) {
       loadOrders();
       return;
