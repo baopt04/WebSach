@@ -34,6 +34,11 @@ import {
 import { getAllTheLoai } from '../../services/TheLoaiService';
 import { getAllNhaXuatBan } from '../../services/NhaXuatBanService';
 import { getAllTacGia } from '../../services/TacGiaService';
+import { 
+  getTacGiaBySach, 
+  createSachTacGia, 
+  deleteSachTacGia 
+} from '../../services/SachTacGiaService';
 import './AdminPage.css';
 
 const { Title } = Typography;
@@ -52,6 +57,7 @@ const ProductFormPage = () => {
   const [theLoaiList, setTheLoaiList] = useState([]);
   const [nxbList, setNxbList] = useState([]);
   const [tacGiaList, setTacGiaList] = useState([]);
+  const [originalTacGiaId, setOriginalTacGiaId] = useState(null);
 
   const [fileList, setFileList] = useState([]);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -83,14 +89,24 @@ const ProductFormPage = () => {
   const fetchProductDetail = async () => {
     setLoading(true);
     try {
-      const product = await getSachById(id);
+      const [product, mappings] = await Promise.all([
+        getSachById(id),
+        getTacGiaBySach(id)
+      ]);
+
+      // Lấy tác giả đầu tiên (giả sử sách chỉ có 1 tác giả chính trong form này)
+      const mainAuthor = (Array.isArray(mappings) && mappings.length > 0) ? mappings[0] : null;
+      const idTacGia = mainAuthor ? mainAuthor.idTacGia : null;
+      
+      setOriginalTacGiaId(idTacGia);
+
       form.setFieldsValue({
         tenSach: product.tenSach,
         giaBan: product.giaBan,
         soLuong: product.soLuong,
         idTheLoai: product.idTheLoai,
         idNxb: product.idNxb,
-        idTacGia: product.idTacGia,
+        idTacGia: idTacGia,
         soTrang: product.soTrang,
         ngonNgu: product.ngonNgu,
         namXuatBan: product.namXuatBan ? dayjs(`${product.namXuatBan}-01-01`) : null,
@@ -110,6 +126,7 @@ const ProductFormPage = () => {
       setFileList(formattedImages);
 
     } catch (error) {
+      console.error('Lỗi tải chi tiết:', error);
       message.error('Không thể tải thông tin sản phẩm');
       navigate('/admin/products');
     } finally {
@@ -146,10 +163,12 @@ const ProductFormPage = () => {
       onOk: async () => {
         setSubmitting(true);
         try {
-          // Chuẩn bị dữ liệu JSON
+          const { idTacGia, ...formValues } = values;
+          
+          // Chuẩn bị dữ liệu JSON cho Sách
           const productData = { 
-            ...values,
-            namXuatBan: values.namXuatBan ? values.namXuatBan.year() : null
+            ...formValues,
+            namXuatBan: formValues.namXuatBan ? formValues.namXuatBan.year() : null
           };
 
           // Lọc ra các file mới (chưa có url/không phải từ server)
@@ -157,11 +176,28 @@ const ProductFormPage = () => {
             .filter(file => !file.url)
             .map(file => file.originFileObj);
 
+          let savedBook;
           if (isEdit) {
-            await updateSachMultipart(id, productData, newImages);
+            savedBook = await updateSachMultipart(id, productData, newImages);
+            
+            // Xử lý cập nhật mapping Tác giả
+            if (idTacGia !== originalTacGiaId) {
+              if (originalTacGiaId) {
+                await deleteSachTacGia(id, originalTacGiaId);
+              }
+              if (idTacGia) {
+                await createSachTacGia({ idSach: id, idTacGia, vaiTro: "Tác giả chính" });
+              }
+            }
             message.success('Cập nhật sản phẩm thành công');
           } else {
-            await createSachMultipart(productData, newImages);
+            savedBook = await createSachMultipart(productData, newImages);
+            const newId = savedBook.id;
+            
+            // Tạo mapping Tác giả mới
+            if (idTacGia) {
+              await createSachTacGia({ idSach: newId, idTacGia, vaiTro: "Tác giả chính" });
+            }
             message.success('Thêm sản phẩm mới thành công');
           }
           navigate('/admin/products');
@@ -195,7 +231,6 @@ const ProductFormPage = () => {
           layout="vertical"
           onFinish={onFinish}
           initialValues={{ trangThai: true }}
-          requiredMark="optional"
         >
           <Row gutter={24}>
             <Col xs={24} lg={16}>
@@ -272,9 +307,9 @@ const ProductFormPage = () => {
 
                 <Col span={8}>
                   <Form.Item name="namXuatBan" label="Năm xuất bản">
-                    <DatePicker 
-                      picker="year" 
-                      style={{ width: '100%' }} 
+                    <DatePicker
+                      picker="year"
+                      style={{ width: '100%' }}
                       placeholder="Chọn năm"
                     />
                   </Form.Item>
@@ -293,8 +328,8 @@ const ProductFormPage = () => {
                 </Col>
 
                 <Col span={12}>
-                  <Form.Item 
-                    name="trangThai" 
+                  <Form.Item
+                    name="trangThai"
                     label="Trạng thái kinh doanh"
                   >
                     <Select placeholder="Chọn trạng thái" disabled={!isEdit}>

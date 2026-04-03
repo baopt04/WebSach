@@ -131,7 +131,7 @@ const AuthorsPage = () => {
           <Tooltip title="Sửa">
             <Button size="small" type="primary" icon={<EditOutlined />} onClick={() => openEdit(r)} />
           </Tooltip>
-          <Tooltip title="Xóa">
+          {/* <Tooltip title="Xóa">
             <Popconfirm
               title="Bạn có chắc chắn muốn xóa tác giả này?"
               onConfirm={() => handleDelete(r.id)}
@@ -141,7 +141,7 @@ const AuthorsPage = () => {
             >
               <Button size="small" danger icon={<DeleteOutlined />} />
             </Popconfirm>
-          </Tooltip>
+          </Tooltip> */}
         </Space>
       ),
     },

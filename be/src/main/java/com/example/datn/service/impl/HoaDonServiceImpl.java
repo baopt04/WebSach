@@ -22,6 +22,7 @@ import com.example.datn.entity.TaiKhoan;
 import com.example.datn.enums.OrderStatus;
 import com.example.datn.enums.PaymentMethod;
 import com.example.datn.enums.TypeBill;
+import com.example.datn.enums.VoucherStatus;
 import com.example.datn.repository.GioHangChiTietRepository;
 import com.example.datn.repository.GioHangRepository;
 import com.example.datn.repository.HoaDonChiTietRepository;
@@ -358,6 +359,9 @@ public class HoaDonServiceImpl implements HoaDonService {
             maGiamGiaChiTietRepository.save(mgct);
             if (maGiamGia.getSoLuong() != null && maGiamGia.getSoLuong() > 0) {
                 maGiamGia.setSoLuong(maGiamGia.getSoLuong() - 1);
+                if (maGiamGia.getSoLuong() == 0) {
+                    maGiamGia.setTrangThai(VoucherStatus.NGUNG_HOAT_DONG);
+                }
                 maGiamGiaRepository.save(maGiamGia);
             }
         }
@@ -368,10 +372,14 @@ public class HoaDonServiceImpl implements HoaDonService {
             for (HoaDonChiTietRequest ctReq : request.getChiTiets()) {
                 Sach sach = sachRepository.findById(ctReq.getIdSach()).orElse(null);
                 
-                if (sach != null && initialStatus == OrderStatus.DA_XAC_NHAN) {
-                    int soLuongMoi = sach.getSoLuong() - ctReq.getSoLuong();
+                // Đơn online khách tạo luôn CHO_XAC_NHAN — trừ tồn khi đặt hàng; hết tồn thì ẩn sách (trangThai = false)
+                if (sach != null && initialStatus == OrderStatus.CHO_XAC_NHAN) {
+                    int soLuongMoi = (sach.getSoLuong() != null ? sach.getSoLuong() : 0) - ctReq.getSoLuong();
                     if (soLuongMoi < 0) soLuongMoi = 0;
                     sach.setSoLuong(soLuongMoi);
+                    if (soLuongMoi == 0) {
+                        sach.setTrangThai(false);
+                    }
                     sachRepository.save(sach);
                 }
 
@@ -449,7 +457,11 @@ public class HoaDonServiceImpl implements HoaDonService {
         maGiamGiaChiTietRepository.findFirstByHoaDon_Id(idHoaDon).ifPresent(mgct -> {
             MaGiamGia mgg = mgct.getMaGiamGia();
             if (mgg != null) {
-                mgg.setSoLuong(mgg.getSoLuong() + 1);
+                int soLuongHienTai = mgg.getSoLuong() != null ? mgg.getSoLuong() : 0;
+                mgg.setSoLuong(soLuongHienTai + 1);
+                if (mgg.getSoLuong() > 0) {
+                    mgg.setTrangThai(VoucherStatus.HOAT_DONG);
+                }
                 maGiamGiaRepository.save(mgg);
             }
         });
@@ -461,6 +473,18 @@ public class HoaDonServiceImpl implements HoaDonService {
         List<HoaDonChiTiet> chiTiets = hoaDonChiTietRepository.findByHoaDonId(idHoaDon);
         if (chiTiets != null && !chiTiets.isEmpty()) {
             chiTiets.forEach(ct -> {
+                // Hoàn lại tồn kho sách khi đơn bị hủy
+                Sach sach = ct.getSach();
+                if (sach != null) {
+                    int tonHienTai = sach.getSoLuong() != null ? sach.getSoLuong() : 0;
+                    int soLuongTraLai = ct.getSoLuong() != null ? ct.getSoLuong() : 0;
+                    sach.setSoLuong(tonHienTai + soLuongTraLai);
+                    if (sach.getSoLuong() > 0) {
+                        sach.setTrangThai(true);
+                    }
+                    sachRepository.save(sach);
+                }
+
                 ct.setTrangThai(OrderStatus.DA_HUY);
                 ct.setNgayCapNhat(LocalDateTime.now());
             });

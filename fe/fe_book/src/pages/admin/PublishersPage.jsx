@@ -4,11 +4,11 @@ import { EditOutlined, DeleteOutlined, EyeOutlined, ShopOutlined } from '@ant-de
 import DataTable from '../../components/admin/DataTable';
 import SearchBar from '../../components/admin/SearchBar';
 import PageHeader from '../../components/admin/PageHeader';
-import { 
-  getAllNhaXuatBan, 
-  createNhaXuatBan, 
-  updateNhaXuatBan, 
-  deleteNhaXuatBan 
+import {
+  getAllNhaXuatBan,
+  createNhaXuatBan,
+  updateNhaXuatBan,
+  deleteNhaXuatBan
 } from '../../services/NhaXuatBanService';
 import './AdminPage.css';
 
@@ -33,8 +33,7 @@ const PublishersPage = () => {
     try {
       const resData = await getAllNhaXuatBan();
       const publishers = Array.isArray(resData) ? resData : (resData?.data || []);
-      
-      // Sắp xếp: ngayCapNhat mới nhất lên trên, null xuống dưới cùng
+
       const sortedData = publishers.sort((a, b) => {
         if (!a.ngayCapNhat && !b.ngayCapNhat) return 0;
         if (!a.ngayCapNhat) return 1;
@@ -56,19 +55,19 @@ const PublishersPage = () => {
     (p.diaChi && p.diaChi.toLowerCase().includes(search.toLowerCase())) ||
     (p.soDienThoai && p.soDienThoai.toLowerCase().includes(search.toLowerCase()))
   );
-  
+
   const paged = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  const openAdd = () => { 
-    setEditingItem(null); 
-    form.resetFields(); 
-    setModalOpen(true); 
+  const openAdd = () => {
+    setEditingItem(null);
+    form.resetFields();
+    setModalOpen(true);
   };
-  
-  const openEdit = (r) => { 
-    setEditingItem(r); 
-    form.setFieldsValue(r); 
-    setModalOpen(true); 
+
+  const openEdit = (r) => {
+    setEditingItem(r);
+    form.setFieldsValue(r);
+    setModalOpen(true);
   };
 
   const openDetail = (r) => {
@@ -105,22 +104,22 @@ const PublishersPage = () => {
   };
 
   const columns = [
-    { 
-      title: 'Tên nhà xuất bản', 
-      dataIndex: 'tenNxb', 
-      key: 'tenNxb', 
-      render: (v) => <strong>{v}</strong> 
+    {
+      title: 'Tên nhà xuất bản',
+      dataIndex: 'tenNxb',
+      key: 'tenNxb',
+      render: (v) => <strong>{v}</strong>
     },
-    { 
-      title: 'Địa chỉ', 
-      dataIndex: 'diaChi', 
-      key: 'diaChi', 
-      ellipsis: true 
+    {
+      title: 'Địa chỉ',
+      dataIndex: 'diaChi',
+      key: 'diaChi',
+      ellipsis: true
     },
-    { 
-      title: 'Số điện thoại', 
-      dataIndex: 'soDienThoai', 
-      key: 'soDienThoai' 
+    {
+      title: 'Số điện thoại',
+      dataIndex: 'soDienThoai',
+      key: 'soDienThoai'
     },
     {
       title: 'Thao tác',
@@ -135,7 +134,7 @@ const PublishersPage = () => {
           <Tooltip title="Sửa">
             <Button size="small" type="primary" icon={<EditOutlined />} onClick={() => openEdit(r)} />
           </Tooltip>
-          <Tooltip title="Xóa">
+          {/* <Tooltip title="Xóa">
             <Popconfirm 
               title="Bạn có chắc chắn muốn xóa nhà xuất bản này?" 
               onConfirm={() => handleDelete(r.id)}
@@ -145,7 +144,7 @@ const PublishersPage = () => {
             >
               <Button size="small" danger icon={<DeleteOutlined />} />
             </Popconfirm>
-          </Tooltip>
+          </Tooltip> */}
         </Space>
       ),
     },
@@ -153,9 +152,9 @@ const PublishersPage = () => {
 
   return (
     <div className="admin-page">
-      <PageHeader 
-        title="Quản lý Nhà xuất bản" 
-        onAdd={openAdd} 
+      <PageHeader
+        title="Quản lý Nhà xuất bản"
+        onAdd={openAdd}
         addText="Thêm nhà xuất bản"
       />
       <Card bordered={false} className="admin-card">
@@ -188,28 +187,28 @@ const PublishersPage = () => {
         cancelText="Hủy"
         width={560}
       >
-        <Form 
-          form={form} 
-          layout="vertical" 
+        <Form
+          form={form}
+          layout="vertical"
           onFinish={handleSave}
         >
-          <Form.Item 
-            name="tenNxb" 
-            label="Tên nhà xuất bản" 
+          <Form.Item
+            name="tenNxb"
+            label="Tên nhà xuất bản"
             rules={[{ required: true, message: 'Vui lòng nhập tên nhà xuất bản' }]}
           >
             <Input placeholder="Nhập tên nxb" />
           </Form.Item>
-          <Form.Item 
-            name="diaChi" 
-            label="Địa chỉ" 
+          <Form.Item
+            name="diaChi"
+            label="Địa chỉ"
             rules={[{ required: true, message: 'Vui lòng nhập địa chỉ' }]}
           >
             <Input placeholder="Nhập địa chỉ" />
           </Form.Item>
-          <Form.Item 
-            name="soDienThoai" 
-            label="Số điện thoại" 
+          <Form.Item
+            name="soDienThoai"
+            label="Số điện thoại"
             rules={[
               { required: true, message: 'Vui lòng nhập số điện thoại' },
               { pattern: /^[0-9+() \-]+$/, message: 'Số điện thoại không hợp lệ' }

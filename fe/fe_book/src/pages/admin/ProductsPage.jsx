@@ -10,6 +10,7 @@ import DataTable from '../../components/admin/DataTable';
 import SearchBar from '../../components/admin/SearchBar';
 import PageHeader from '../../components/admin/PageHeader';
 import { getAllSach, deleteSach, getSachById } from '../../services/SachService';
+import { getTacGiaBySach } from '../../services/SachTacGiaService';
 import './AdminPage.css';
 
 const { Title, Text } = Typography;
@@ -37,7 +38,22 @@ const ProductsPage = () => {
       const resData = await getAllSach();
       const products = Array.isArray(resData) ? resData : (resData?.data || []);
 
-      const sortedData = products.sort((a, b) => {
+      // Lấy tất cả tác giả cho từng cuốn sách để hiển thị ở bảng
+      const enrichedProducts = await Promise.all(
+        products.map(async (book) => {
+          try {
+            const mappings = await getTacGiaBySach(book.id);
+            const authorNames = Array.isArray(mappings)
+              ? mappings.map(m => m.tenTacGia).join(', ')
+              : 'Chưa cập nhật';
+            return { ...book, tenTacGia: authorNames };
+          } catch (e) {
+            return { ...book, tenTacGia: 'Lỗi tải' };
+          }
+        })
+      );
+
+      const sortedData = enrichedProducts.sort((a, b) => {
         if (!a.ngayCapNhat && !b.ngayCapNhat) return 0;
         if (!a.ngayCapNhat) return 1;
         if (!b.ngayCapNhat) return -1;
@@ -56,10 +72,18 @@ const ProductsPage = () => {
   const handleViewDetail = async (id) => {
     setViewLoading(true);
     try {
-      const fullDetail = await getSachById(id);
-      setDetailItem(fullDetail);
+      const [product, mappings] = await Promise.all([
+        getSachById(id),
+        getTacGiaBySach(id)
+      ]);
+
+      // Gắn tên tác giả vào detailItem để hiển thị
+      const authors = Array.isArray(mappings) ? mappings.map(m => m.tenTacGia).join(', ') : '';
+
+      setDetailItem({ ...product, tenTacGia: authors || 'Chưa cập nhật' });
       setDetailOpen(true);
     } catch (error) {
+      console.error('Lỗi tải chi tiết:', error);
       message.error('Không thể tải chi tiết sản phẩm');
     } finally {
       setViewLoading(false);
@@ -74,7 +98,8 @@ const ProductsPage = () => {
   const filtered = data.filter((p) =>
     (p.tenSach && p.tenSach.toLowerCase().includes(search.toLowerCase())) ||
     (p.maSach && p.maSach.toLowerCase().includes(search.toLowerCase())) ||
-    (p.maVach && p.maVach.toLowerCase().includes(search.toLowerCase()))
+    (p.maVach && p.maVach.toLowerCase().includes(search.toLowerCase())) ||
+    (p.tenTacGia && p.tenTacGia.toLowerCase().includes(search.toLowerCase()))
   );
 
   const paged = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -119,6 +144,11 @@ const ProductsPage = () => {
       dataIndex: 'tenSach',
       key: 'tenSach',
       render: (v) => <strong style={{ color: '#000' }}>{v}</strong>
+    },
+    {
+      title: 'Tác giả',
+      dataIndex: 'tenTacGia',
+      key: 'tenTacGia',
     },
     {
       title: 'Thể loại',
@@ -175,18 +205,8 @@ const ProductsPage = () => {
               onClick={() => navigate(`/admin/products/edit/${r.id}`)}
             />
           </Tooltip>
-          <Tooltip title="Xóa">
-            <Popconfirm
-              title="Bạn có chắc chắn muốn xóa sản phẩm này?"
-              onConfirm={() => handleDelete(r.id)}
-              okText="Xóa"
-              cancelText="Hủy"
-              okButtonProps={{ danger: true }}
-            >
-              <Button size="small" danger icon={<DeleteOutlined />} />
-            </Popconfirm>
-          </Tooltip>
-        </Space>
+
+        </Space >
       ),
     },
   ];

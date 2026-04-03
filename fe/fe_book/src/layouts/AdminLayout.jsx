@@ -23,29 +23,34 @@ const { Sider, Header, Content } = Layout;
 const { Text } = Typography;
 
 const menuItems = [
-  { key: '/admin/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
-  { key: '/admin/products', icon: <BookOutlined />, label: 'Sản phẩm' },
-  { key: '/admin/coupons', icon: <TagOutlined />, label: 'Mã giảm giá' },
-  { key: '/admin/orders', icon: <FileTextOutlined />, label: 'Hóa đơn' },
-  { key: '/admin/accounts', icon: <UserOutlined />, label: 'Tài khoản' },
-  { key: '/admin/authors', icon: <EditOutlined />, label: 'Tác giả' },
-  { key: '/admin/categories', icon: <AppstoreOutlined />, label: 'Thể loại' },
-  { key: '/admin/publishers', icon: <ShopOutlined />, label: 'Nhà xuất bản' },
   { key: '/admin/statistics', icon: <BarChartOutlined />, label: 'Thống kê' },
   { key: '/admin/pos', icon: <ShoppingCartOutlined />, label: 'Bán hàng tại quầy' },
+  { key: '/admin/orders', icon: <FileTextOutlined />, label: 'Quản lý hóa đơn' },
+  { 
+    key: 'group-products', 
+    icon: <AppstoreOutlined />, 
+    label: 'Quản lý sản phẩm',
+    children: [
+      { key: '/admin/products', icon: <BookOutlined />, label: 'Sản phẩm' },
+      { key: '/admin/categories', icon: <AppstoreOutlined />, label: 'Thể loại' },
+      { key: '/admin/publishers', icon: <ShopOutlined />, label: 'Nhà xuất bản' },
+      { key: '/admin/authors', icon: <EditOutlined />, label: 'Tác giả' },
+    ]
+  },
+  { key: '/admin/accounts', icon: <UserOutlined />, label: 'Quản lý tài khoản' },
+  { key: '/admin/coupons', icon: <TagOutlined />, label: 'Giảm giá' },
 ];
 
 const pageTitles = {
-  '/admin/dashboard': 'Dashboard',
-  '/admin/products': 'Quản lý Sản phẩm',
-  '/admin/coupons': 'Quản lý Mã giảm giá',
-  '/admin/orders': 'Quản lý Hóa đơn',
-  '/admin/accounts': 'Quản lý Tài khoản',
-  '/admin/authors': 'Quản lý Tác giả',
-  '/admin/categories': 'Quản lý Thể loại',
-  '/admin/publishers': 'Quản lý Nhà xuất bản',
   '/admin/statistics': 'Báo cáo Thống kê',
   '/admin/pos': 'Bán hàng tại quầy',
+  '/admin/orders': 'Quản lý Hóa đơn',
+  '/admin/products': 'Quản lý Sản phẩm',
+  '/admin/categories': 'Quản lý Thể loại',
+  '/admin/publishers': 'Quản lý Nhà xuất bản',
+  '/admin/authors': 'Quản lý Tác giả',
+  '/admin/accounts': 'Quản lý Tài khoản',
+  '/admin/coupons': 'Quản lý Mã giảm giá',
 };
 
 const AdminLayout = () => {
@@ -54,8 +59,36 @@ const AdminLayout = () => {
   const location = useLocation();
 
   const currentPath = location.pathname;
-  const activeMenuKey = menuItems.find(item => currentPath === item.key || currentPath.startsWith(item.key + '/'))?.key || currentPath;
-  const pageTitle = pageTitles[activeMenuKey] || 'Admin';
+  
+  // Hàm tìm key active kể cả trong sub-menu
+  const findActiveKey = (items, path) => {
+    for (const item of items) {
+      if (item.children) {
+        const childMatch = findActiveKey(item.children, path);
+        if (childMatch) return childMatch;
+      }
+      if (path === item.key || path.startsWith(item.key + '/')) {
+        return item.key;
+      }
+    }
+    return null;
+  };
+
+  const activeMenuKey = findActiveKey(menuItems, currentPath) || currentPath;
+  const pageTitle = pageTitles[activeMenuKey] || 'Admin dashboard';
+
+  // Quản lý việc mở auto-expand sub-menu
+  const [openKeys, setOpenKeys] = useState(['group-products']);
+
+  const handleMenuClick = ({ key }) => {
+    if (key.startsWith('/')) {
+      navigate(key);
+    }
+  };
+
+  const onOpenChange = (keys) => {
+    setOpenKeys(keys);
+  };
 
   const dropdownItems = [
     {
@@ -71,10 +104,6 @@ const AdminLayout = () => {
       danger: true,
     },
   ];
-
-  const handleMenuClick = ({ key }) => {
-    navigate(key);
-  };
 
   return (
     <Layout className="admin-layout">
@@ -95,6 +124,8 @@ const AdminLayout = () => {
           theme="dark"
           mode="inline"
           selectedKeys={[activeMenuKey]}
+          openKeys={collapsed ? [] : openKeys}
+          onOpenChange={onOpenChange}
           items={menuItems}
           onClick={handleMenuClick}
           className="admin-menu"

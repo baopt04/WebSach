@@ -6,7 +6,7 @@ const BASE = "/api/payment";
 export const createVnpayPaymentUrl = async (data) => {
   try {
     const res = await axiosClient.post(`${BASE}/payment-vnpay`, data);
-    return res.data; // string URL
+    return res.data;
   } catch (error) {
     throw handleError(error);
   }

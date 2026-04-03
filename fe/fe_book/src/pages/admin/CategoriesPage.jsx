@@ -121,7 +121,7 @@ const CategoriesPage = () => {
           <Tooltip title="Sửa">
             <Button size="small" type="primary" icon={<EditOutlined />} onClick={() => openEdit(r)} />
           </Tooltip>
-          <Tooltip title="Xóa">
+          {/* <Tooltip title="Xóa">
             <Popconfirm
               title="Bạn có chắc chắn muốn xóa thể loại này?"
               onConfirm={() => handleDelete(r.id)}
@@ -131,7 +131,7 @@ const CategoriesPage = () => {
             >
               <Button size="small" danger icon={<DeleteOutlined />} />
             </Popconfirm>
-          </Tooltip>
+          </Tooltip> */}
         </Space>
       ),
     },
