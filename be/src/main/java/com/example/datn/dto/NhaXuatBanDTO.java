@@ -2,6 +2,8 @@ package com.example.datn.dto;
 
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -13,4 +15,5 @@ public class NhaXuatBanDTO {
     private String tenNxb;
     private String diaChi;
     private String soDienThoai;
+    private LocalDateTime ngayCapNhat;
 }

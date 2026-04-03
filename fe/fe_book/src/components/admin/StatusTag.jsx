@@ -16,7 +16,7 @@ const defaultMap = {
   da_xac_nhan: { color: 'processing', label: 'Đã xác nhận' },
   dang_chuan_bi_hang: { color: 'cyan', label: 'Đang chuẩn bị hàng' },
   dang_giao: { color: 'purple', label: 'Đang giao' },
-  da_giao: { color: 'success', label: 'Đã giao' },
+  da_thanh_toan: { color: 'success', label: 'Đã thanh toán' },
   thanh_cong: { color: 'green', label: 'Thành công' },
   da_huy: { color: 'error', label: 'Đã hủy' },
   rejected: { color: 'error', label: 'Từ chối' },

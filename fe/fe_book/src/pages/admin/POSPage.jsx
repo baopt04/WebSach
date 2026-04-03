@@ -1,256 +1,410 @@
-import { useState } from 'react';
-import { Card, Row, Col, Input, Button, InputNumber, Select, Divider, Typography, List, Avatar, Empty, message, Space, Tag } from 'antd';
+import React, { useState, useEffect } from 'react';
 import {
-  SearchOutlined,
-  ShoppingCartOutlined,
-  DeleteOutlined,
-  PlusOutlined,
-  MinusOutlined,
-  PrinterOutlined,
-  ClearOutlined,
+    Card, Row, Col, Input, Button, InputNumber, Select, Divider, Typography,
+    Table, Tabs, Space, Tag, Switch, Form, Empty, message, Popconfirm
+} from 'antd';
+import {
+    PlusOutlined, SearchOutlined, DeleteOutlined,
+    QrcodeOutlined, ShoppingCartOutlined, UserOutlined,
+    CarOutlined, CheckCircleOutlined, CloseOutlined
 } from '@ant-design/icons';
 import PageHeader from '../../components/admin/PageHeader';
+import { getProvinces, getDistricts, getWards } from '../../services/GhnApi';
+
+// New Sub-components
+// import ProductSelectModal from '../../components/admin/pos/ProductSelectModal';
+import CustomerSelectModal from '../../components/admin/pos/CustomerSelectModal';
+import VoucherSelectModal from '../../components/admin/pos/VoucherSelectModal';
+
 import './AdminPage.css';
 import './POSPage.css';
 
 const { Text, Title } = Typography;
 const { Option } = Select;
 
-const allBooks = [
-  { id: 1, title: 'Đắc Nhân Tâm', author: 'Dale Carnegie', price: 85000, image: 'https://picsum.photos/seed/book1/60/80' },
-  { id: 2, title: 'Nhà Giả Kim', author: 'Paulo Coelho', price: 95000, image: 'https://picsum.photos/seed/book2/60/80' },
-  { id: 3, title: 'Sapiens', author: 'Yuval Noah Harari', price: 260000, image: 'https://picsum.photos/seed/book3/60/80' },
-  { id: 4, title: 'Tư Duy Nhanh Chậm', author: 'Daniel Kahneman', price: 259000, image: 'https://picsum.photos/seed/book4/60/80' },
-  { id: 5, title: 'Muôn Kiếp Nhân Sinh', author: 'Brian Weiss', price: 175000, image: 'https://picsum.photos/seed/book5/60/80' },
-  { id: 6, title: 'Dám Nghĩ Lớn', author: 'David J. Schwartz', price: 115000, image: 'https://picsum.photos/seed/book6/60/80' },
-  { id: 7, title: 'Người Giàu Có Nhất Babylon', author: 'George S. Clason', price: 89000, image: 'https://picsum.photos/seed/book7/60/80' },
-  { id: 8, title: 'Tôi Thấy Hoa Vàng...', author: 'Nguyễn Nhật Ánh', price: 110000, image: 'https://picsum.photos/seed/book8/60/80' },
-];
+const INITIAL_BILL = (id, index) => ({
+    id: `bill-${id}`,
+    label: `Hóa đơn ${index}`,
+    cartItems: [],
+    customer: { hoten: 'Khách lẻ', id: null },
+    voucher: null,
+    isDelivery: false,
+    shippingInfo: {
+        fullname: '', email: '', phone: '',
+        province: null, district: null, ward: null,
+        addressDetail: ''
+    }
+});
 
 const POSPage = () => {
-  const [bookSearch, setBookSearch] = useState('');
-  const [cart, setCart] = useState([]);
-  const [couponCode, setCouponCode] = useState('');
-  const [discount, setDiscount] = useState(0);
-  const [paymentMethod, setPaymentMethod] = useState('cash');
+    const [bills, setBills] = useState([INITIAL_BILL(Date.now(), 1)]);
+    const [activeTabKey, setActiveTabKey] = useState(bills[0].id);
+    const [idCounter, setIdCounter] = useState(2);
 
-  const filteredBooks = allBooks.filter(
-    (b) =>
-      b.title.toLowerCase().includes(bookSearch.toLowerCase()) ||
-      b.author.toLowerCase().includes(bookSearch.toLowerCase())
-  );
+    // Modal States
+    const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+    const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+    const [isVoucherModalOpen, setIsVoucherModalOpen] = useState(false);
 
-  const addToCart = (book) => {
-    setCart((prev) => {
-      const existing = prev.find((item) => item.id === book.id);
-      if (existing) {
-        return prev.map((item) =>
-          item.id === book.id ? { ...item, qty: item.qty + 1 } : item
-        );
-      }
-      return [...prev, { ...book, qty: 1 }];
-    });
-  };
+    // Delivery API Data
+    const [provinces, setProvinces] = useState([]);
+    const [districts, setDistricts] = useState([]);
+    const [wards, setWards] = useState([]);
 
-  const updateQty = (id, delta) => {
-    setCart((prev) =>
-      prev
-        .map((item) => (item.id === id ? { ...item, qty: item.qty + delta } : item))
-        .filter((item) => item.qty > 0)
-    );
-  };
-
-  const removeFromCart = (id) => {
-    setCart((prev) => prev.filter((item) => item.id !== id));
-  };
-
-  const clearCart = () => {
-    setCart([]);
-    setCouponCode('');
-    setDiscount(0);
-  };
-
-  const applyDiscount = () => {
-    if (couponCode === 'BOOK10') {
-      setDiscount(10);
-      message.success('Áp dụng mã giảm giá 10% thành công!');
-    } else if (couponCode === 'BOOK50K') {
-      setDiscount(50000);
-      message.success('Áp dụng mã giảm giá 50,000₫ thành công!');
-    } else {
-      message.error('Mã giảm giá không hợp lệ!');
-    }
-  };
-
-  const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
-  const discountAmount = discount > 0 && discount < 100
-    ? Math.round((subtotal * discount) / 100)
-    : discount;
-  const total = Math.max(0, subtotal - discountAmount);
-
-  const handleCheckout = () => {
-    if (cart.length === 0) {
-      message.warning('Giỏ hàng trống!');
-      return;
-    }
-    message.success(`Thanh toán thành công! Tổng: ${total.toLocaleString('vi-VN')}₫`);
-    clearCart();
-  };
-
-  return (
-    <div className="admin-page">
-      <PageHeader title="Bán hàng tại quầy" showAdd={false} />
-      <Row gutter={16} className="pos-container">
-
-        <Col xs={24} lg={14}>
-          <Card
-            title={<><SearchOutlined /> Chọn sản phẩm</>}
-            bordered={false}
-            className="admin-card pos-products-card"
-          >
-            <Input.Search
-              placeholder="Tìm kiếm sách..."
-              value={bookSearch}
-              onChange={(e) => setBookSearch(e.target.value)}
-              allowClear
-              style={{ marginBottom: 16 }}
-            />
-            <div className="pos-book-grid">
-              {filteredBooks.length === 0 ? (
-                <Empty description="Không tìm thấy sách" />
-              ) : (
-                filteredBooks.map((book) => (
-                  <div
-                    key={book.id}
-                    className="pos-book-card"
-                    onClick={() => addToCart(book)}
-                  >
-                    <img src={book.image} alt={book.title} className="pos-book-img" />
-                    <div className="pos-book-info">
-                      <div className="pos-book-title">{book.title}</div>
-                      <div className="pos-book-author">{book.author}</div>
-                      <div className="pos-book-price">{book.price.toLocaleString('vi-VN')}₫</div>
-                    </div>
-                    <button className="pos-add-btn">
-                      <PlusOutlined />
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-          </Card>
-        </Col>
-
-
-        <Col xs={24} lg={10}>
-          <Card
-            title={
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span><ShoppingCartOutlined /> Giỏ hàng ({cart.length} sp)</span>
-                {cart.length > 0 && (
-                  <Button size="small" danger icon={<ClearOutlined />} onClick={clearCart}>Xóa hết</Button>
-                )}
-              </div>
+    useEffect(() => {
+        const fetchProvinces = async () => {
+            try {
+                const data = await getProvinces();
+                setProvinces(data.data || []);
+            } catch (error) {
+                console.error("Lỗi tải tỉnh thành:", error);
             }
-            bordered={false}
-            className="admin-card pos-cart-card"
-          >
-            {cart.length === 0 ? (
-              <Empty description="Chưa có sản phẩm" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-            ) : (
-              <List
-                dataSource={cart}
-                renderItem={(item) => (
-                  <List.Item className="pos-cart-item">
-                    <div className="pos-cart-item-info">
-                      <img src={item.image} alt={item.title} className="pos-cart-img" />
-                      <div>
-                        <div className="pos-cart-title">{item.title}</div>
-                        <div className="pos-cart-price">{item.price.toLocaleString('vi-VN')}₫</div>
-                      </div>
-                    </div>
-                    <div className="pos-cart-controls">
-                      <Space size={4}>
-                        <Button size="small" icon={<MinusOutlined />} onClick={() => updateQty(item.id, -1)} />
-                        <span className="pos-cart-qty">{item.qty}</span>
-                        <Button size="small" icon={<PlusOutlined />} onClick={() => updateQty(item.id, 1)} />
-                        <Button size="small" danger icon={<DeleteOutlined />} onClick={() => removeFromCart(item.id)} />
-                      </Space>
-                      <div className="pos-cart-subtotal">
-                        {(item.price * item.qty).toLocaleString('vi-VN')}₫
-                      </div>
-                    </div>
-                  </List.Item>
-                )}
-              />
-            )}
+        };
+        fetchProvinces();
+    }, []);
 
-            <Divider />
+    const activeBill = bills.find(b => b.id === activeTabKey) || bills[0];
 
+    const updateActiveBill = (updates) => {
+        setBills(prev => prev.map(b => b.id === activeTabKey ? { ...b, ...updates } : b));
+    };
 
-            <div className="pos-coupon">
-              <Input
-                placeholder="Nhập mã giảm giá"
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                style={{ flex: 1 }}
-              />
-              <Button type="primary" ghost onClick={applyDiscount}>Áp dụng</Button>
-            </div>
+    const addBill = () => {
+        if (bills.length >= 10) {
+            message.warning("Chỉ được tạo tối đa 10 hóa đơn");
+            return;
+        }
+        const newBill = INITIAL_BILL(Date.now(), idCounter);
+        setBills([...bills, newBill]);
+        setActiveTabKey(newBill.id);
+        setIdCounter(idCounter + 1);
+    };
 
+    const removeBill = (targetKey) => {
+        if (bills.length === 1) return;
+        const newBills = bills.filter(b => b.id !== targetKey);
+        setBills(newBills);
+        if (activeTabKey === targetKey) {
+            setActiveTabKey(newBills[0].id);
+        }
+    };
 
-            <div className="pos-summary">
-              <div className="pos-summary-row">
-                <Text>Tạm tính:</Text>
-                <Text>{subtotal.toLocaleString('vi-VN')}₫</Text>
-              </div>
-              {discount > 0 && (
-                <div className="pos-summary-row discount">
-                  <Text>Giảm giá {typeof discount === 'number' && discount < 100 ? `(${discount}%)` : ''}:</Text>
-                  <Text type="danger">-{discountAmount.toLocaleString('vi-VN')}₫</Text>
-                </div>
-              )}
-              <Divider style={{ margin: '8px 0' }} />
-              <div className="pos-summary-row total">
-                <Text strong style={{ fontSize: 16 }}>Tổng cộng:</Text>
-                <Text strong style={{ fontSize: 20, color: '#1677ff' }}>{total.toLocaleString('vi-VN')}₫</Text>
-              </div>
-            </div>
+    const addToCart = (product) => {
+        const currentCart = [...activeBill.cartItems];
+        const existing = currentCart.find(item => item.id === product.id);
+        if (existing) {
+            existing.qty += 1;
+        } else {
+            currentCart.push({ ...product, qty: 1 });
+        }
+        updateActiveBill({ cartItems: currentCart });
+        setIsProductModalOpen(false);
+        message.success(`Đã thêm ${product.tensach} vào giỏ`);
+    };
 
+    const removeProduct = (id) => {
+        updateActiveBill({ cartItems: activeBill.cartItems.filter(item => item.id !== id) });
+    };
 
-            <div className="pos-payment">
-              <Text>Phương thức thanh toán:</Text>
-              <Select value={paymentMethod} onChange={setPaymentMethod} style={{ width: '100%', marginTop: 6 }}>
-                <Option value="cash">💵 Tiền mặt</Option>
-                <Option value="transfer">🏦 Chuyển khoản</Option>
-                <Option value="card">💳 Quẹt thẻ</Option>
-              </Select>
-            </div>
+    const updateProductQty = (id, qty) => {
+        if (qty < 1) return;
+        updateActiveBill({
+            cartItems: activeBill.cartItems.map(item => item.id === id ? { ...item, qty } : item)
+        });
+    };
 
+    const handleProvinceChange = async (val) => {
+        updateActiveBill({ shippingInfo: { ...activeBill.shippingInfo, province: val, district: null, ward: null } });
+        try {
+            const data = await getDistricts(val);
+            setDistricts(data.data || []);
+            setWards([]);
+        } catch (error) {
+            console.error(error);
+        }
+    };
 
-            <Button
-              type="primary"
-              size="large"
-              block
-              icon={<ShoppingCartOutlined />}
-              onClick={handleCheckout}
-              className="pos-checkout-btn"
-            >
-              Thanh toán
-            </Button>
-            <Button
-              size="middle"
-              block
-              icon={<PrinterOutlined />}
-              style={{ marginTop: 8 }}
-            >
-              In hóa đơn
-            </Button>
-          </Card>
-        </Col>
-      </Row>
-    </div>
-  );
+    const handleDistrictChange = async (val) => {
+        updateActiveBill({ shippingInfo: { ...activeBill.shippingInfo, district: val, ward: null } });
+        try {
+            const data = await getWards(val);
+            setWards(data.data || []);
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const cartColumns = [
+        { title: 'STT', key: 'stt', render: (t, r, idx) => idx + 1, width: 50 },
+        { title: 'Ảnh', dataIndex: 'hinhanh', key: 'hinhanh', render: (url) => <img src={url} alt="book" style={{ width: 40, height: 50, objectFit: 'cover' }} />, width: 80 },
+        { title: 'Tên sản phẩm', dataIndex: 'tensach', key: 'tensach' },
+        {
+            title: 'Số lượng',
+            dataIndex: 'qty',
+            key: 'qty',
+            render: (qty, record) => (
+                <InputNumber min={1} value={qty} onChange={(val) => updateProductQty(record.id, val)} />
+            ),
+            width: 100
+        },
+        {
+            title: 'Tổng tiền',
+            key: 'total',
+            render: (_, record) => `${(record.gia * record.qty).toLocaleString('vi-VN')}₫`,
+            width: 120
+        },
+        {
+            title: 'Thao tác',
+            key: 'action',
+            render: (_, record) => (
+                <Popconfirm title="Xóa sản phẩm này?" onConfirm={() => removeProduct(record.id)}>
+                    <Button danger type="text" icon={<DeleteOutlined />} />
+                </Popconfirm>
+            ),
+            width: 80
+        },
+    ];
+
+    const subtotal = activeBill.cartItems.reduce((sum, item) => sum + item.gia * item.qty, 0);
+    const discount = activeBill.voucher ? activeBill.voucher.giatrigiam : 0;
+    const finalTotal = Math.max(0, subtotal - discount);
+
+    const handleConfirmPayment = () => {
+        if (activeBill.cartItems.length === 0) {
+            message.error("Giỏ hàng trống!");
+            return;
+        }
+        message.success("Thanh toán thành công cho " + activeBill.label);
+        removeBill(activeBill.id);
+    };
+
+    return (
+        <div className="admin-page">
+            <PageHeader
+                title="Quản lý bán hàng"
+                showAdd={true}
+                addText="Tạo hóa đơn"
+                onAdd={addBill}
+            />
+
+            <Tabs
+                type="editable-card"
+                onChange={setActiveTabKey}
+                activeKey={activeTabKey}
+                onEdit={(targetKey, action) => {
+                    if (action === 'remove') removeBill(targetKey);
+                    else addBill();
+                }}
+                hideAdd={bills.length >= 10}
+                items={bills.map(bill => ({
+                    label: bill.label,
+                    key: bill.id,
+                    closable: bills.length > 1,
+                    children: (
+                        <Row gutter={16}>
+                            <Col xs={24} lg={16}>
+                                <Card
+                                    title="Thông tin sản phẩm"
+                                    extra={
+                                        <Space>
+                                            <Button icon={<QrcodeOutlined />}>QR Code</Button>
+                                            <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsProductModalOpen(true)}>
+                                                Thêm sản phẩm
+                                            </Button>
+                                        </Space>
+                                    }
+                                >
+                                    <Table
+                                        dataSource={bill.cartItems}
+                                        columns={cartColumns}
+                                        rowKey="id"
+                                        pagination={false}
+                                        locale={{ emptyText: <Empty description="Chưa có sản phẩm nào" /> }}
+                                    />
+                                </Card>
+
+                                <Card title="Tài khoản" style={{ marginTop: 16 }}>
+                                    <Row justify="space-between" align="middle">
+                                        <Col>
+                                            <Space>
+                                                <UserOutlined />
+                                                <Text>Khách hàng: <b>{bill.customer.hoten}</b></Text>
+                                            </Space>
+                                        </Col>
+                                        <Col>
+                                            <Button onClick={() => setIsCustomerModalOpen(true)}>Chọn tài khoản</Button>
+                                        </Col>
+                                    </Row>
+                                </Card>
+                            </Col>
+
+                            <Col xs={24} lg={8}>
+                                <Card title="Thông tin thanh toán">
+                                    <Row gutter={16}>
+                                        <Col span={24}>
+                                            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                                                <Select
+                                                    placeholder="Chọn mã giảm giá"
+                                                    style={{ flex: 1 }}
+                                                    value={bill.voucher?.id}
+                                                    allowClear
+                                                    onClear={() => updateActiveBill({ voucher: null })}
+                                                >
+                                                    {bill.voucher && <Option value={bill.voucher.id}>{bill.voucher.tenma}</Option>}
+                                                </Select>
+                                                <Button onClick={() => setIsVoucherModalOpen(true)}>Chọn mã</Button>
+                                            </div>
+
+                                            <Space style={{ marginBottom: 16 }}>
+                                                <Switch
+                                                    checked={bill.isDelivery}
+                                                    onChange={(val) => updateActiveBill({ isDelivery: val })}
+                                                />
+                                                <Text><CarOutlined /> Giao hàng</Text>
+                                            </Space>
+
+                                            {bill.isDelivery && (
+                                                <div className="delivery-form">
+                                                    <Form layout="vertical">
+                                                        <Form.Item label="Họ tên người nhận">
+                                                            <Input
+                                                                value={bill.shippingInfo.fullname}
+                                                                onChange={e => updateActiveBill({ shippingInfo: { ...bill.shippingInfo, fullname: e.target.value } })}
+                                                            />
+                                                        </Form.Item>
+                                                        <Row gutter={8}>
+                                                            <Col span={12}>
+                                                                <Form.Item label="Số điện thoại">
+                                                                    <Input
+                                                                        value={bill.shippingInfo.phone}
+                                                                        onChange={e => updateActiveBill({ shippingInfo: { ...bill.shippingInfo, phone: e.target.value } })}
+                                                                    />
+                                                                </Form.Item>
+                                                            </Col>
+                                                            <Col span={12}>
+                                                                <Form.Item label="Email">
+                                                                    <Input
+                                                                        value={bill.shippingInfo.email}
+                                                                        onChange={e => updateActiveBill({ shippingInfo: { ...bill.shippingInfo, email: e.target.value } })}
+                                                                    />
+                                                                </Form.Item>
+                                                            </Col>
+                                                        </Row>
+                                                        <Form.Item label="Tỉnh/Thành phố">
+                                                            <Select
+                                                                value={bill.shippingInfo.province}
+                                                                onChange={handleProvinceChange}
+                                                                placeholder="Chọn tỉnh/thành"
+                                                            >
+                                                                {provinces.map(p => (
+                                                                    <Option key={p.ProvinceID} value={p.ProvinceID}>{p.ProvinceName}</Option>
+                                                                ))}
+                                                            </Select>
+                                                        </Form.Item>
+                                                        <Row gutter={8}>
+                                                            <Col span={12}>
+                                                                <Form.Item label="Quận/Huyện">
+                                                                    <Select
+                                                                        value={bill.shippingInfo.district}
+                                                                        onChange={handleDistrictChange}
+                                                                        placeholder="Chọn quận/huyện"
+                                                                    >
+                                                                        {districts.map(d => (
+                                                                            <Option key={d.DistrictID} value={d.DistrictID}>{d.DistrictName}</Option>
+                                                                        ))}
+                                                                    </Select>
+                                                                </Form.Item>
+                                                            </Col>
+                                                            <Col span={12}>
+                                                                <Form.Item label="Phường/Xã">
+                                                                    <Select
+                                                                        value={bill.shippingInfo.ward}
+                                                                        onChange={(val) => updateActiveBill({ shippingInfo: { ...bill.shippingInfo, ward: val } })}
+                                                                        placeholder="Chọn phường/xã"
+                                                                    >
+                                                                        {wards.map(w => (
+                                                                            <Option key={w.WardCode} value={w.WardCode}>{w.WardName}</Option>
+                                                                        ))}
+                                                                    </Select>
+                                                                </Form.Item>
+                                                            </Col>
+                                                        </Row>
+                                                        <Form.Item label="Địa chỉ chi tiết">
+                                                            <Input.TextArea
+                                                                rows={2}
+                                                                value={bill.shippingInfo.addressDetail}
+                                                                onChange={e => updateActiveBill({ shippingInfo: { ...bill.shippingInfo, addressDetail: e.target.value } })}
+                                                            />
+                                                        </Form.Item>
+                                                    </Form>
+                                                </div>
+                                            )}
+                                        </Col>
+                                    </Row>
+
+                                    <Divider />
+
+                                    <div className="pos-summary">
+                                        <Row justify="space-between">
+                                            <Text>Tiền hàng:</Text>
+                                            <Text>{subtotal.toLocaleString('vi-VN')}₫</Text>
+                                        </Row>
+                                        <Row justify="space-between">
+                                            <Text>Giảm giá:</Text>
+                                            <Text type="danger">-{discount.toLocaleString('vi-VN')}₫</Text>
+                                        </Row>
+                                        <Divider style={{ margin: '8px 0' }} />
+                                        <Row justify="space-between">
+                                            <Title level={4} style={{ margin: 0 }}>Tổng tiền:</Title>
+                                            <Title level={4} style={{ margin: 0, color: '#1677ff' }}>
+                                                {finalTotal.toLocaleString('vi-VN')}₫
+                                            </Title>
+                                        </Row>
+                                    </div>
+
+                                    <Button
+                                        type="primary"
+                                        size="large"
+                                        block
+                                        style={{ marginTop: 16 }}
+                                        icon={<CheckCircleOutlined />}
+                                        onClick={handleConfirmPayment}
+                                    >
+                                        Xác nhận thanh toán
+                                    </Button>
+                                </Card>
+                            </Col>
+                        </Row>
+                    )
+                }))}
+            />
+
+            {/* <ProductSelectModal
+                visible={isProductModalOpen}
+                onCancel={() => setIsProductModalOpen(false)}
+                onSelect={addToCart}
+            /> */}
+
+            <CustomerSelectModal
+                visible={isCustomerModalOpen}
+                onCancel={() => setIsCustomerModalOpen(false)}
+                onSelect={(customer) => {
+                    updateActiveBill({ customer });
+                    setIsCustomerModalOpen(false);
+                }}
+            />
+
+            <VoucherSelectModal
+                visible={isVoucherModalOpen}
+                onCancel={() => setIsVoucherModalOpen(false)}
+                onSelect={(voucher) => {
+                    updateActiveBill({ voucher });
+                    setIsVoucherModalOpen(false);
+                }}
+                minAmount={subtotal}
+            />
+        </div>
+    );
 };
 
 export default POSPage;

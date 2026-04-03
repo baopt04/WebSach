@@ -1,20 +1,18 @@
 import { useState, useEffect } from 'react';
 import { Card, Modal, Form, Input, Space, Button, Tooltip, message, Popconfirm } from 'antd';
-import { EditOutlined, DeleteOutlined, EyeOutlined, PlusOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, EyeOutlined, ShopOutlined } from '@ant-design/icons';
 import DataTable from '../../components/admin/DataTable';
 import SearchBar from '../../components/admin/SearchBar';
 import PageHeader from '../../components/admin/PageHeader';
-import {
-  getAllTacGia,
-  createTacGia,
-  updateTacGia,
-  deleteTacGia
-} from '../../services/TacGiaService';
+import { 
+  getAllNhaXuatBan, 
+  createNhaXuatBan, 
+  updateNhaXuatBan, 
+  deleteNhaXuatBan 
+} from '../../services/NhaXuatBanService';
 import './AdminPage.css';
 
-const { TextArea } = Input;
-
-const AuthorsPage = () => {
+const PublishersPage = () => {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState([]);
   const [search, setSearch] = useState('');
@@ -27,16 +25,17 @@ const AuthorsPage = () => {
   const pageSize = 10;
 
   useEffect(() => {
-    fetchAuthors();
+    fetchPublishers();
   }, []);
 
-  const fetchAuthors = async () => {
+  const fetchPublishers = async () => {
     setLoading(true);
     try {
-      const resData = await getAllTacGia();
-      const authors = Array.isArray(resData) ? resData : (resData?.data || []);
-
-      const sortedData = authors.sort((a, b) => {
+      const resData = await getAllNhaXuatBan();
+      const publishers = Array.isArray(resData) ? resData : (resData?.data || []);
+      
+      // Sắp xếp: ngayCapNhat mới nhất lên trên, null xuống dưới cùng
+      const sortedData = publishers.sort((a, b) => {
         if (!a.ngayCapNhat && !b.ngayCapNhat) return 0;
         if (!a.ngayCapNhat) return 1;
         if (!b.ngayCapNhat) return -1;
@@ -45,30 +44,31 @@ const AuthorsPage = () => {
 
       setData(sortedData);
     } catch (error) {
-      console.error('Lỗi tải danh sách tác giả:', error);
-      message.error('Không thể tải danh sách tác giả');
+      console.error('Lỗi tải danh sách nhà xuất bản:', error);
+      message.error('Không thể tải danh sách nhà xuất bản');
     } finally {
       setLoading(false);
     }
   };
 
-  const filtered = data.filter((a) =>
-    a.tenTacGia.toLowerCase().includes(search.toLowerCase()) ||
-    (a.tieuSu && a.tieuSu.toLowerCase().includes(search.toLowerCase()))
+  const filtered = data.filter((p) =>
+    (p.tenNxb && p.tenNxb.toLowerCase().includes(search.toLowerCase())) ||
+    (p.diaChi && p.diaChi.toLowerCase().includes(search.toLowerCase())) ||
+    (p.soDienThoai && p.soDienThoai.toLowerCase().includes(search.toLowerCase()))
   );
-
+  
   const paged = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  const openAdd = () => {
-    setEditingItem(null);
-    form.resetFields();
-    setModalOpen(true);
+  const openAdd = () => { 
+    setEditingItem(null); 
+    form.resetFields(); 
+    setModalOpen(true); 
   };
-
-  const openEdit = (r) => {
-    setEditingItem(r);
-    form.setFieldsValue(r);
-    setModalOpen(true);
+  
+  const openEdit = (r) => { 
+    setEditingItem(r); 
+    form.setFieldsValue(r); 
+    setModalOpen(true); 
   };
 
   const openDetail = (r) => {
@@ -79,44 +79,48 @@ const AuthorsPage = () => {
   const handleSave = async (values) => {
     try {
       if (editingItem) {
-        await updateTacGia(editingItem.id, values);
-        message.success('Cập nhật tác giả thành công');
+        await updateNhaXuatBan(editingItem.id, values);
+        message.success('Cập nhật nhà xuất bản thành công');
       } else {
-        await createTacGia(values);
-        message.success('Thêm tác giả thành công');
+        await createNhaXuatBan(values);
+        message.success('Thêm nhà xuất bản thành công');
       }
       setModalOpen(false);
-      fetchAuthors();
+      fetchPublishers();
     } catch (error) {
-      console.error('Lỗi lưu tác giả:', error);
+      console.error('Lỗi lưu nhà xuất bản:', error);
       message.error('Lỗi: ' + (error.message || 'Không thể lưu thông tin'));
     }
   };
 
   const handleDelete = async (id) => {
     try {
-      await deleteTacGia(id);
-      message.success('Xóa tác giả thành công');
-      fetchAuthors();
+      await deleteNhaXuatBan(id);
+      message.success('Xóa nhà xuất bản thành công');
+      fetchPublishers();
     } catch (error) {
-      console.error('Lỗi xóa tác giả:', error);
-      message.error('Lỗi: ' + (error.message || 'Không thể xóa tác giả'));
+      console.error('Lỗi xóa nhà xuất bản:', error);
+      message.error('Lỗi: ' + (error.message || 'Không thể xóa nhà xuất bản'));
     }
   };
 
   const columns = [
-    {
-      title: 'Tên tác giả',
-      dataIndex: 'tenTacGia',
-      key: 'tenTacGia',
-      render: (v) => <strong>{v}</strong>
+    { 
+      title: 'Tên nhà xuất bản', 
+      dataIndex: 'tenNxb', 
+      key: 'tenNxb', 
+      render: (v) => <strong>{v}</strong> 
     },
-    {
-      title: 'Tiểu sử',
-      dataIndex: 'tieuSu',
-      key: 'tieuSu',
-      ellipsis: true,
-      render: (text) => text || 'Chưa có tiểu sử'
+    { 
+      title: 'Địa chỉ', 
+      dataIndex: 'diaChi', 
+      key: 'diaChi', 
+      ellipsis: true 
+    },
+    { 
+      title: 'Số điện thoại', 
+      dataIndex: 'soDienThoai', 
+      key: 'soDienThoai' 
     },
     {
       title: 'Thao tác',
@@ -132,8 +136,8 @@ const AuthorsPage = () => {
             <Button size="small" type="primary" icon={<EditOutlined />} onClick={() => openEdit(r)} />
           </Tooltip>
           <Tooltip title="Xóa">
-            <Popconfirm
-              title="Bạn có chắc chắn muốn xóa tác giả này?"
+            <Popconfirm 
+              title="Bạn có chắc chắn muốn xóa nhà xuất bản này?" 
               onConfirm={() => handleDelete(r.id)}
               okText="Xóa"
               cancelText="Hủy"
@@ -149,15 +153,15 @@ const AuthorsPage = () => {
 
   return (
     <div className="admin-page">
-      <PageHeader
-        title="Quản lý Tác giả"
-        onAdd={openAdd}
-        addText="Thêm tác giả"
+      <PageHeader 
+        title="Quản lý Nhà xuất bản" 
+        onAdd={openAdd} 
+        addText="Thêm nhà xuất bản"
       />
       <Card bordered={false} className="admin-card">
         <div className="admin-toolbar">
           <SearchBar
-            placeholder="Tìm theo tên tác giả hoặc tiểu sử..."
+            placeholder="Tìm theo tên nxb, địa chỉ, sđt..."
             value={search}
             onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
             onSearch={(v) => { setSearch(v); setCurrentPage(1); }}
@@ -176,7 +180,7 @@ const AuthorsPage = () => {
 
       {/* Modal Thêm / Sửa */}
       <Modal
-        title={editingItem ? 'Chỉnh sửa tác giả' : 'Thêm tác giả mới'}
+        title={editingItem ? 'Chỉnh sửa nhà xuất bản' : 'Thêm nhà xuất bản mới'}
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
         onOk={() => form.submit()}
@@ -184,34 +188,41 @@ const AuthorsPage = () => {
         cancelText="Hủy"
         width={560}
       >
-        <Form
-          form={form}
-          layout="vertical"
+        <Form 
+          form={form} 
+          layout="vertical" 
           onFinish={handleSave}
         >
-          <Form.Item
-            name="tenTacGia"
-            label="Tên tác giả"
+          <Form.Item 
+            name="tenNxb" 
+            label="Tên nhà xuất bản" 
+            rules={[{ required: true, message: 'Vui lòng nhập tên nhà xuất bản' }]}
+          >
+            <Input placeholder="Nhập tên nxb" />
+          </Form.Item>
+          <Form.Item 
+            name="diaChi" 
+            label="Địa chỉ" 
+            rules={[{ required: true, message: 'Vui lòng nhập địa chỉ' }]}
+          >
+            <Input placeholder="Nhập địa chỉ" />
+          </Form.Item>
+          <Form.Item 
+            name="soDienThoai" 
+            label="Số điện thoại" 
             rules={[
-              { required: true, message: 'Vui lòng nhập tên tác giả' },
-              { min: 3, message: 'Tên tác giả phải có ít nhất 3 ký tự' }
+              { required: true, message: 'Vui lòng nhập số điện thoại' },
+              { pattern: /^[0-9+() \-]+$/, message: 'Số điện thoại không hợp lệ' }
             ]}
           >
-            <Input placeholder="Nhập tên tác giả" />
-          </Form.Item>
-          <Form.Item
-            name="tieuSu"
-            label="Tiểu sử"
-            rules={[{ required: true, message: 'Vui lòng nhập tiểu sử' }]}
-          >
-            <TextArea rows={4} placeholder="Mô tả tiểu sử về tác giả..." />
+            <Input placeholder="Nhập số điện thoại" />
           </Form.Item>
         </Form>
       </Modal>
 
       {/* Modal Chi Tiết */}
       <Modal
-        title="Chi tiết tác giả"
+        title="Chi tiết nhà xuất bản"
         open={detailOpen}
         onCancel={() => setDetailOpen(false)}
         footer={[
@@ -222,21 +233,27 @@ const AuthorsPage = () => {
         {detailItem && (
           <Space direction="vertical" style={{ width: '100%' }} size="middle">
             <div>
-              <strong>Tên tác giả:</strong>
+              <strong>Tên nhà xuất bản:</strong>
               <p style={{ margin: '4px 0 0 0', padding: '8px', background: '#f5f5f5', borderRadius: '4px' }}>
-                {detailItem.tenTacGia}
+                {detailItem.tenNxb}
               </p>
             </div>
             <div>
-              <strong>Tiểu sử:</strong>
+              <strong>Địa chỉ:</strong>
               <p style={{ margin: '4px 0 0 0', padding: '8px', background: '#f5f5f5', borderRadius: '4px' }}>
-                {detailItem.tieuSu || 'Chưa có tiểu sử'}
+                {detailItem.diaChi || 'Chưa có thông tin'}
+              </p>
+            </div>
+            <div>
+              <strong>Số điện thoại:</strong>
+              <p style={{ margin: '4px 0 0 0', padding: '8px', background: '#f5f5f5', borderRadius: '4px' }}>
+                {detailItem.soDienThoai || 'Chưa có thông tin'}
               </p>
             </div>
             <div>
               <strong>Ngày cập nhật cuối:</strong>
               <p style={{ margin: '4px 0 0 0', padding: '8px', background: '#f5f5f5', borderRadius: '4px' }}>
-                {new Date(detailItem.ngayCapNhat).toLocaleString('vi-VN')}
+                {detailItem.ngayCapNhat ? new Date(detailItem.ngayCapNhat).toLocaleString('vi-VN') : 'Chưa có thông tin'}
               </p>
             </div>
           </Space>
@@ -246,4 +263,4 @@ const AuthorsPage = () => {
   );
 };
 
-export default AuthorsPage;
+export default PublishersPage;

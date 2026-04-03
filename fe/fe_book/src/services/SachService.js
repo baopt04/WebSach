@@ -1,43 +1,164 @@
 import axiosClient from "./AxiosClient";
+import { handleError } from "./ErrorHandler";
 
-const SachService = {
+const BASE = "/api/admin/v1/sach";
 
-    /** GET /api/sach — Lấy toàn bộ danh sách sách */
-    getAll: () => {
-        return axiosClient.get("/api/sach");
-    },
-
-    /** GET /api/sach/:id — Chi tiết sách */
-    detail: (id) => {
-        return axiosClient.get(`/api/sach/${id}`);
-    },
-
-    /** POST /api/sach — Thêm sách mới */
-    add: (data) => {
-        return axiosClient.post("/api/sach", data);
-    },
-
-    /** PUT /api/sach/:id — Cập nhật sách */
-    update: (id, data) => {
-        return axiosClient.put(`/api/sach/${id}`, data);
-    },
-
-    /** DELETE /api/sach/:id — Ẩn sách (soft delete) */
-    hidden: (id) => {
-        return axiosClient.delete(`/api/sach/${id}`);
-    },
-
-    /** GET /api/sach/search?keyword=... — Tìm kiếm */
-    search: (keyword) => {
-        return axiosClient.get("/api/sach/search", {
-            params: { keyword },
-        });
-    },
-
-    /** GET /api/sach/the-loai/:idTheLoai — Lọc theo thể loại */
-    findByTheLoai: (idTheLoai) => {
-        return axiosClient.get(`/api/sach/the-loai/${idTheLoai}`);
-    },
+export const getAllSach = async () => {
+    try {
+        const res = await axiosClient.get(BASE);
+        return res.data;
+    } catch (error) {
+        throw handleError(error);
+    }
 };
 
-export default SachService;
+export const getSachById = async (id) => {
+    try {
+        if (!id) throw new Error("ID không hợp lệ");
+
+        const res = await axiosClient.get(`${BASE}/${id}`);
+        return res.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+export const createSach = async (data) => {
+    try {
+        const res = await axiosClient.post(BASE, data, {
+            headers: { "Content-Type": "application/json" }
+        });
+        return res.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+export const createSachMultipart = async (data, images) => {
+    try {
+        const formData = new FormData();
+
+        Object.keys(data).forEach((key) => {
+            formData.append(key, data[key]);
+        });
+
+        if (images && images.length > 0) {
+            images.forEach((file) => {
+                formData.append("images", file);
+            });
+        }
+
+        const res = await axiosClient.post(BASE, formData, {
+            headers: { "Content-Type": "multipart/form-data" }
+        });
+        return res.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+export const updateSach = async (id, data) => {
+    try {
+        if (!id) throw new Error("ID không hợp lệ");
+
+        const res = await axiosClient.put(`${BASE}/${id}`, data, {
+            headers: { "Content-Type": "application/json" }
+        });
+        return res.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+export const updateSachMultipart = async (id, data, images) => {
+    try {
+        if (!id) throw new Error("ID không hợp lệ");
+
+        const formData = new FormData();
+
+        Object.keys(data).forEach((key) => {
+            formData.append(key, data[key]);
+        });
+
+        if (images && images.length > 0) {
+            images.forEach((file) => {
+                formData.append("images", file);
+            });
+        }
+
+        const res = await axiosClient.put(`${BASE}/${id}`, formData, {
+            headers: { "Content-Type": "multipart/form-data" }
+        });
+        return res.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+export const deleteSach = async (id) => {
+    try {
+        if (!id) throw new Error("ID không hợp lệ");
+
+        const res = await axiosClient.delete(`${BASE}/${id}`);
+        return res.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+export const searchSach = async (keyword) => {
+    try {
+        const res = await axiosClient.get(`${BASE}/search`, {
+            params: { keyword }
+        });
+        return res.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+export const getSachByTheLoai = async (idTheLoai) => {
+    try {
+        const res = await axiosClient.get(`${BASE}/the-loai/${idTheLoai}`);
+        return res.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+export const getSachImages = async (id) => {
+    try {
+        const res = await axiosClient.get(`${BASE}/${id}/images`);
+        return res.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+export const addSachImages = async (id, images) => {
+    try {
+        const formData = new FormData();
+
+        images.forEach((file) => {
+            formData.append("images", file);
+        });
+
+        const res = await axiosClient.post(`${BASE}/${id}/images`, formData, {
+            headers: { "Content-Type": "multipart/form-data" }
+        });
+        return res.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+export const deleteSachImage = async (sachId, imageId) => {
+    try {
+        const res = await axiosClient.delete(
+            `${BASE}/${sachId}/images/${imageId}`
+        );
+        return res.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};

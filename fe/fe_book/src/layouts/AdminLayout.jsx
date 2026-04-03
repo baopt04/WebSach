@@ -15,6 +15,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   BellOutlined,
+  ShopOutlined,
 } from '@ant-design/icons';
 import './AdminLayout.css';
 
@@ -29,6 +30,7 @@ const menuItems = [
   { key: '/admin/accounts', icon: <UserOutlined />, label: 'Tài khoản' },
   { key: '/admin/authors', icon: <EditOutlined />, label: 'Tác giả' },
   { key: '/admin/categories', icon: <AppstoreOutlined />, label: 'Thể loại' },
+  { key: '/admin/publishers', icon: <ShopOutlined />, label: 'Nhà xuất bản' },
   { key: '/admin/statistics', icon: <BarChartOutlined />, label: 'Thống kê' },
   { key: '/admin/pos', icon: <ShoppingCartOutlined />, label: 'Bán hàng tại quầy' },
 ];
@@ -41,6 +43,7 @@ const pageTitles = {
   '/admin/accounts': 'Quản lý Tài khoản',
   '/admin/authors': 'Quản lý Tác giả',
   '/admin/categories': 'Quản lý Thể loại',
+  '/admin/publishers': 'Quản lý Nhà xuất bản',
   '/admin/statistics': 'Báo cáo Thống kê',
   '/admin/pos': 'Bán hàng tại quầy',
 };

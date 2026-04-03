@@ -11,7 +11,6 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class SachRequest {
 
-    @NotBlank(message = "Mã sách không được để trống")
     private String maSach;
 
     private String maVach;

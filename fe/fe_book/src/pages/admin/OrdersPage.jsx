@@ -202,7 +202,8 @@ const OrdersPage = () => {
             <Option value="DA_XAC_NHAN">Đã xác nhận</Option>
             <Option value="DANG_CHUAN_BI_HANG">Đang chuẩn bị</Option>
             <Option value="DANG_GIAO">Đang giao</Option>
-            <Option value="DA_GIAO">Đã giao</Option>
+            <Option value="DA_THANH_TOAN">Đã thanh toán</Option>
+            <Option value="THANH_CONG">Thành công</Option>
             <Option value="DA_HUY">Đã hủy</Option>
           </Select>
           <RangePicker
@@ -229,7 +230,7 @@ const OrdersPage = () => {
             { key: 'DA_XAC_NHAN', label: renderTab('Đã xác nhận', 'DA_XAC_NHAN') },
             { key: 'DANG_CHUAN_BI_HANG', label: renderTab('Đang chuẩn bị', 'DANG_CHUAN_BI_HANG') },
             { key: 'DANG_GIAO', label: renderTab('Đang giao', 'DANG_GIAO') },
-            { key: 'DA_GIAO', label: renderTab('Đã giao', 'DA_GIAO') },
+            { key: 'DA_THANH_TOAN', label: renderTab('Đã thanh toán', 'DA_THANH_TOAN') },
             { key: 'THANH_CONG', label: renderTab('Thành công', 'THANH_CONG') },
             { key: 'DA_HUY', label: renderTab('Đã hủy', 'DA_HUY') },
           ]}

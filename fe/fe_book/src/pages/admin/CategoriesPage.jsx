@@ -1,62 +1,137 @@
-import { useState } from 'react';
-import { Card, Modal, Form, Input, Space, Button, Tooltip } from 'antd';
-import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { useState, useEffect } from 'react';
+import { Card, Modal, Form, Input, Space, Button, Tooltip, message, Popconfirm } from 'antd';
+import { EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import DataTable from '../../components/admin/DataTable';
 import SearchBar from '../../components/admin/SearchBar';
 import PageHeader from '../../components/admin/PageHeader';
+import {
+  getAllTheLoai,
+  createTheLoai,
+  updateTheLoai,
+  deleteTheLoai
+} from '../../services/TheLoaiService';
 import './AdminPage.css';
 
-const { TextArea } = Input;
-
-const mockCategories = [
-  { id: 1, name: 'Tâm lý - Kỹ năng sống', description: 'Sách phát triển bản thân và kỹ năng mềm', bookCount: 245 },
-  { id: 2, name: 'Tiểu thuyết', description: 'Tác phẩm văn học hư cấu', bookCount: 312 },
-  { id: 3, name: 'Lịch sử - Địa lý', description: 'Kiến thức lịch sử và địa lý thế giới', bookCount: 187 },
-  { id: 4, name: 'Khoa học - Công nghệ', description: 'Sách khoa học và công nghệ', bookCount: 143 },
-  { id: 5, name: 'Kinh tế - Kinh doanh', description: 'Quản trị, tài chính và khởi nghiệp', bookCount: 198 },
-  { id: 6, name: 'Thiếu nhi', description: 'Sách dành cho trẻ em', bookCount: 276 },
-  { id: 7, name: 'Triết học - Tư tưởng', description: 'Sách triết học và tư tưởng học', bookCount: 89 },
-  { id: 8, name: 'Văn học nước ngoài', description: 'Tác phẩm văn học dịch từ nước ngoài', bookCount: 421 },
-  { id: 9, name: 'Truyện tranh - Comic', description: 'Manga, comic và truyện tranh', bookCount: 534 },
-  { id: 10, name: 'Giáo khoa - Tham khảo', description: 'Sách giáo khoa và sách học', bookCount: 367 },
-  { id: 11, name: 'Ngoại ngữ', description: 'Học tiếng Anh, Nhật, Hàn...', bookCount: 212 },
-  { id: 12, name: 'Tâm linh - Tôn giáo', description: 'Sách về tâm linh và tín ngưỡng', bookCount: 95 },
-];
-
 const CategoriesPage = () => {
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState([]);
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [detailItem, setDetailItem] = useState(null);
   const [form] = Form.useForm();
   const pageSize = 10;
 
-  const filtered = mockCategories.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase())
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    setLoading(true);
+    try {
+      const resData = await getAllTheLoai();
+      const categories = Array.isArray(resData) ? resData : (resData?.data || []);
+
+      const sortedData = categories.sort((a, b) => {
+        if (!a.ngayCapNhat && !b.ngayCapNhat) return 0;
+        if (!a.ngayCapNhat) return 1;
+        if (!b.ngayCapNhat) return -1;
+        return new Date(b.ngayCapNhat) - new Date(a.ngayCapNhat);
+      });
+
+      setData(sortedData);
+    } catch (error) {
+      console.error('Lỗi tải danh sách thể loại:', error);
+      message.error('Không thể tải danh sách thể loại');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filtered = data.filter((c) =>
+    c.tenTheLoai && c.tenTheLoai.toLowerCase().includes(search.toLowerCase())
   );
+
   const paged = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  const openAdd = () => { setEditingItem(null); form.resetFields(); setModalOpen(true); };
-  const openEdit = (r) => { setEditingItem(r); form.setFieldsValue(r); setModalOpen(true); };
+  const openAdd = () => {
+    setEditingItem(null);
+    form.resetFields();
+    setModalOpen(true);
+  };
+
+  const openEdit = (r) => {
+    setEditingItem(r);
+    form.setFieldsValue(r);
+    setModalOpen(true);
+  };
+
+  const openDetail = (r) => {
+    setDetailItem(r);
+    setDetailOpen(true);
+  };
+
+  const handleSave = async (values) => {
+    try {
+      if (editingItem) {
+        await updateTheLoai(editingItem.id, values);
+        message.success('Cập nhật thể loại thành công');
+      } else {
+        await createTheLoai(values);
+        message.success('Thêm thể loại thành công');
+      }
+      setModalOpen(false);
+      fetchCategories();
+    } catch (error) {
+      console.error('Lỗi lưu thể loại:', error);
+      message.error('Lỗi: ' + (error.message || 'Không thể lưu thông tin'));
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await deleteTheLoai(id);
+      message.success('Xóa thể loại thành công');
+      fetchCategories();
+    } catch (error) {
+      console.error('Lỗi xóa thể loại:', error);
+      message.error('Lỗi: ' + (error.message || 'Không thể xóa thể loại'));
+    }
+  };
 
   const columns = [
-    { title: 'Tên thể loại', dataIndex: 'name', key: 'name', render: (v) => <strong>{v}</strong> },
-    { title: 'Mô tả', dataIndex: 'description', key: 'description', ellipsis: true },
     {
-      title: 'Số sách',
-      dataIndex: 'bookCount',
-      key: 'bookCount',
-      align: 'center',
-      render: (v) => <span style={{ color: '#1677ff', fontWeight: 600 }}>{v}</span>,
+      title: 'Tên thể loại',
+      dataIndex: 'tenTheLoai',
+      key: 'tenTheLoai',
+      render: (v) => <strong>{v}</strong>
     },
     {
       title: 'Thao tác',
       key: 'action',
-      width: 100,
+      width: 130,
+      align: 'center',
       render: (_, r) => (
         <Space>
-          <Tooltip title="Sửa"><Button size="small" type="primary" icon={<EditOutlined />} onClick={() => openEdit(r)} /></Tooltip>
-          <Tooltip title="Xóa"><Button size="small" danger icon={<DeleteOutlined />} /></Tooltip>
+          <Tooltip title="Xem chi tiết">
+            <Button size="small" icon={<EyeOutlined />} onClick={() => openDetail(r)} />
+          </Tooltip>
+          <Tooltip title="Sửa">
+            <Button size="small" type="primary" icon={<EditOutlined />} onClick={() => openEdit(r)} />
+          </Tooltip>
+          <Tooltip title="Xóa">
+            <Popconfirm
+              title="Bạn có chắc chắn muốn xóa thể loại này?"
+              onConfirm={() => handleDelete(r.id)}
+              okText="Xóa"
+              cancelText="Hủy"
+              okButtonProps={{ danger: true }}
+            >
+              <Button size="small" danger icon={<DeleteOutlined />} />
+            </Popconfirm>
+          </Tooltip>
         </Space>
       ),
     },
@@ -64,7 +139,11 @@ const CategoriesPage = () => {
 
   return (
     <div className="admin-page">
-      <PageHeader title="Quản lý Thể loại" onAdd={openAdd} addLabel="Thêm thể loại" />
+      <PageHeader
+        title="Quản lý Thể loại"
+        onAdd={openAdd}
+        addText="Thêm thể loại"
+      />
       <Card bordered={false} className="admin-card">
         <div className="admin-toolbar">
           <SearchBar
@@ -80,10 +159,12 @@ const CategoriesPage = () => {
           total={filtered.length}
           currentPage={currentPage}
           pageSize={pageSize}
+          loading={loading}
           onPageChange={(p) => setCurrentPage(p)}
         />
       </Card>
 
+      {/* Modal Thêm / Sửa */}
       <Modal
         title={editingItem ? 'Chỉnh sửa thể loại' : 'Thêm thể loại mới'}
         open={modalOpen}
@@ -93,14 +174,50 @@ const CategoriesPage = () => {
         cancelText="Hủy"
         width={500}
       >
-        <Form form={form} layout="vertical" onFinish={() => setModalOpen(false)}>
-          <Form.Item name="name" label="Tên thể loại" rules={[{ required: true }]}>
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSave}
+        >
+          <Form.Item
+            name="tenTheLoai"
+            label="Tên thể loại"
+            rules={[
+              { required: true, message: 'Vui lòng nhập tên thể loại' },
+              { min: 2, message: 'Tên thể loại phải có ít nhất 2 ký tự' }
+            ]}
+          >
             <Input placeholder="Nhập tên thể loại" />
           </Form.Item>
-          <Form.Item name="description" label="Mô tả">
-            <TextArea rows={3} placeholder="Mô tả về thể loại..." />
-          </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Modal Chi Tiết */}
+      <Modal
+        title="Chi tiết thể loại"
+        open={detailOpen}
+        onCancel={() => setDetailOpen(false)}
+        footer={[
+          <Button key="close" onClick={() => setDetailOpen(false)}>Đóng</Button>
+        ]}
+        width={500}
+      >
+        {detailItem && (
+          <Space direction="vertical" style={{ width: '100%' }} size="middle">
+            <div>
+              <strong>Tên thể loại:</strong>
+              <p style={{ margin: '4px 0 0 0', padding: '8px', background: '#f5f5f5', borderRadius: '4px' }}>
+                {detailItem.tenTheLoai}
+              </p>
+            </div>
+            <div>
+              <strong>Ngày cập nhật cuối:</strong>
+              <p style={{ margin: '4px 0 0 0', padding: '8px', background: '#f5f5f5', borderRadius: '4px' }}>
+                {detailItem.ngayCapNhat ? new Date(detailItem.ngayCapNhat).toLocaleString('vi-VN') : 'Chưa có thông tin'}
+              </p>
+            </div>
+          </Space>
+        )}
       </Modal>
     </div>
   );

@@ -2,6 +2,8 @@ package com.example.datn.dto.response;
 
 import lombok.*;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 
 
 @Getter
@@ -30,6 +32,8 @@ public class SachResponse {
     private String tenNxb;
 
     private String duongDanAnh;
+    private List<String> hinhAnhs;
 
     private Boolean trangThai;
+    private LocalDateTime ngayCapNhat;
 }

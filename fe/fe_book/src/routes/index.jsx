@@ -18,7 +18,7 @@ import SearchOrderPage from '../pages/client/SearchOrderPage';
 import OrderSuccessPage from '../pages/client/OrderSuccessPage';
 
 import DashboardPage from '../pages/admin/DashboardPage';
-import AdminProductsPage from '../pages/admin/ProductsPage';
+// import AdminProductsPage from '../pages/admin/ProductsPage';
 import CouponsPage from '../pages/admin/CouponsPage';
 import AdminOrdersPage from '../pages/admin/OrdersPage';
 import AccountsPage from '../pages/admin/AccountsPage';
@@ -27,6 +27,9 @@ import CategoriesPage from '../pages/admin/CategoriesPage';
 import StatisticsPage from '../pages/admin/StatisticsPage';
 import POSPage from '../pages/admin/POSPage';
 import OrderDetailAdmin from '../pages/admin/OrderDetailAdmin';
+import PublishersPage from '../pages/admin/PublishersPage';
+import ProductsPageAdmin from '../pages/admin/ProductsPage';
+import ProductFormPage from '../pages/admin/ProductFormPage';
 
 const router = createBrowserRouter([
   {
@@ -61,13 +64,16 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> },
       { path: 'dashboard', element: <DashboardPage /> },
-      { path: 'products', element: <AdminProductsPage /> },
+      { path: 'products', element: <ProductsPageAdmin /> },
+      { path: 'products/new', element: <ProductFormPage /> },
+      { path: 'products/edit/:id', element: <ProductFormPage /> },
       { path: 'coupons', element: <CouponsPage /> },
       { path: 'orders', element: <AdminOrdersPage /> },
       { path: 'orders/:id', element: <OrderDetailAdmin /> },
       { path: 'accounts', element: <AccountsPage /> },
       { path: 'authors', element: <AuthorsPage /> },
       { path: 'categories', element: <CategoriesPage /> },
+      { path: 'publishers', element: <PublishersPage /> },
       { path: 'statistics', element: <StatisticsPage /> },
       { path: 'pos', element: <POSPage /> },
     ],

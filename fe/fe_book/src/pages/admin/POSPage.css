@@ -198,3 +198,33 @@
   border: none !important;
   border-radius: 10px !important;
 }
+
+.delivery-form {
+  background: #fafafa;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+  margin-top: 8px;
+}
+
+.delivery-form .ant-form-item {
+  margin-bottom: 8px;
+}
+
+.pos-summary {
+  background: #fdfdfd;
+  border: 1px solid #f0f0f0;
+  padding: 16px;
+  border-radius: 8px;
+}
+
+.ant-tabs-nav-add {
+  background: #1677ff !important;
+  color: white !important;
+  border-radius: 4px !important;
+  margin-left: 8px !important;
+}
+
+.ant-tabs-nav-add:hover {
+  background: #4096ff !important;
+}
