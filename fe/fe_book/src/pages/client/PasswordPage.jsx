@@ -14,16 +14,26 @@ const PasswordPage = () => {
       message.error('Vui lòng nhập đầy đủ thông tin!');
       return;
     }
-    if (newPassword.length < 6) {
-      message.error('Mật khẩu mới phải có ít nhất 6 ký tự!');
+
+    if (newPassword.includes(' ') || oldPassword.includes(' ')) {
+      message.error('Mật khẩu không được chứa khoảng trắng!');
       return;
     }
+
+    if (newPassword.length < 6 || newPassword.length > 50) {
+      message.error('Mật khẩu mới phải từ 6 đến 50 ký tự!');
+      return;
+    }
+
+    if (oldPassword === newPassword) {
+      message.error('Mật khẩu mới phải khác với mật khẩu hiện tại!');
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
-      message.error('Mật khẩu mới không khớp!');
+      message.error('Mật khẩu xác nhận không khớp với mật khẩu mới!');
       return;
     }
-
-
     Modal.confirm({
       title: 'Xác nhận đổi mật khẩu',
       content: 'Bạn có chắc chắn muốn đổi mật khẩu không?',

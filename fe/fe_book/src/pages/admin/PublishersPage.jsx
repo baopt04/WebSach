@@ -75,21 +75,31 @@ const PublishersPage = () => {
     setDetailOpen(true);
   };
 
-  const handleSave = async (values) => {
-    try {
-      if (editingItem) {
-        await updateNhaXuatBan(editingItem.id, values);
-        message.success('Cập nhật nhà xuất bản thành công');
-      } else {
-        await createNhaXuatBan(values);
-        message.success('Thêm nhà xuất bản thành công');
+  const handleSave = (values) => {
+    Modal.confirm({
+      title: editingItem ? 'Xác nhận cập nhật nhà xuất bản?' : 'Xác nhận thêm nhà xuất bản mới?',
+      content: editingItem 
+        ? `Bạn có chắc chắn muốn cập nhật thông tin cho "${editingItem.tenNxb}"?`
+        : `Bạn có chắc chắn muốn thêm nhà xuất bản "${values.tenNxb}"?`,
+      okText: 'Xác nhận',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          if (editingItem) {
+            await updateNhaXuatBan(editingItem.id, values);
+            message.success('Cập nhật nhà xuất bản thành công');
+          } else {
+            await createNhaXuatBan(values);
+            message.success('Thêm nhà xuất bản thành công');
+          }
+          setModalOpen(false);
+          fetchPublishers();
+        } catch (error) {
+          console.error('Lỗi lưu nhà xuất bản:', error);
+          message.error('Lỗi: ' + (error.message || 'Không thể lưu thông tin'));
+        }
       }
-      setModalOpen(false);
-      fetchPublishers();
-    } catch (error) {
-      console.error('Lỗi lưu nhà xuất bản:', error);
-      message.error('Lỗi: ' + (error.message || 'Không thể lưu thông tin'));
-    }
+    });
   };
 
   const handleDelete = async (id) => {
@@ -191,30 +201,40 @@ const PublishersPage = () => {
           form={form}
           layout="vertical"
           onFinish={handleSave}
+          validateTrigger="onChange"
         >
           <Form.Item
             name="tenNxb"
             label="Tên nhà xuất bản"
-            rules={[{ required: true, message: 'Vui lòng nhập tên nhà xuất bản' }]}
+            rules={[
+              { required: true, message: 'Vui lòng nhập tên nhà xuất bản' },
+              { whitespace: true, message: 'Tên NXB không được chỉ chứa khoảng trắng' },
+              { min: 3, message: 'Tên NXB phải có ít nhất 3 ký tự' },
+              { max: 100, message: 'Tên NXB tối đa 100 ký tự' }
+            ]}
           >
-            <Input placeholder="Nhập tên nxb" />
+            <Input placeholder="Ví dụ: NXB Trẻ, NXB Kim Đồng..." />
           </Form.Item>
           <Form.Item
             name="diaChi"
             label="Địa chỉ"
-            rules={[{ required: true, message: 'Vui lòng nhập địa chỉ' }]}
+            rules={[
+              { required: true, message: 'Vui lòng nhập địa chỉ' },
+              { whitespace: true, message: 'Địa chỉ không được chỉ chứa khoảng trắng' },
+              { min: 5, message: 'Địa chỉ quá ngắn (tối thiểu 5 ký tự)' }
+            ]}
           >
-            <Input placeholder="Nhập địa chỉ" />
+            <Input placeholder="Nhập địa chỉ trụ sở" />
           </Form.Item>
           <Form.Item
             name="soDienThoai"
             label="Số điện thoại"
             rules={[
               { required: true, message: 'Vui lòng nhập số điện thoại' },
-              { pattern: /^[0-9+() \-]+$/, message: 'Số điện thoại không hợp lệ' }
+              { pattern: /^(0[3|5|7|8|9])+([0-9]{8})\b$/, message: 'SĐT không hợp lệ (10 số, bắt đầu 03,05,07,08,09)' }
             ]}
           >
-            <Input placeholder="Nhập số điện thoại" />
+            <Input placeholder="Nhập số điện thoại liên hệ" />
           </Form.Item>
         </Form>
       </Modal>

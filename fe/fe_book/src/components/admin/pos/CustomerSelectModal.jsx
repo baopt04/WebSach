@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Table, Input, Button, message, Space } from 'antd';
 import { SearchOutlined, UserAddOutlined } from '@ant-design/icons';
-import { getAllTaiKhoan, searchTaiKhoan } from '../../../services/AccountService';
+import { getAllKhachHang } from '../../../services/PosSerivce';
 import QuickAddCustomerModal from './QuickAddCustomerModal';
 
 const CustomerSelectModal = ({ visible, onCancel, onSelect }) => {
@@ -19,9 +19,10 @@ const CustomerSelectModal = ({ visible, onCancel, onSelect }) => {
     const fetchCustomers = async () => {
         setLoading(true);
         try {
-            const data = await getAllTaiKhoan();
-            // Assuming data is an array or has a property containing the array
-            setCustomers(Array.isArray(data) ? data : (data.data || []));
+            const data = await getAllKhachHang();
+            const list = Array.isArray(data) ? data : (data.data || []);
+            const sortedList = [...list].sort((a, b) => new Date(b.ngayCapNhat) - new Date(a.ngayCapNhat));
+            setCustomers(sortedList);
         } catch (error) {
             message.error("Lỗi tải danh sách khách hàng");
         } finally {
@@ -43,9 +44,9 @@ const CustomerSelectModal = ({ visible, onCancel, onSelect }) => {
 
     const columns = [
         { title: 'STT', key: 'stt', render: (t, r, idx) => idx + 1, width: 60 },
-        { title: 'Tên khách hàng', dataIndex: 'hoten', key: 'hoten' },
+        { title: 'Tên khách hàng', dataIndex: 'hoTen', key: 'hoTen' },
         { title: 'Email', dataIndex: 'email', key: 'email' },
-        { title: 'SĐT', dataIndex: 'sodienthoai', key: 'sodienthoai' },
+        { title: 'SĐT', dataIndex: 'soDienThoai', key: 'soDienThoai' },
         {
             title: 'Hành động',
             key: 'action',
@@ -64,10 +65,10 @@ const CustomerSelectModal = ({ visible, onCancel, onSelect }) => {
                 width={800}
                 footer={[
                     <Button key="cancel" onClick={onCancel}>Hủy</Button>,
-                    <Button 
-                        key="quickAdd" 
-                        type="primary" 
-                        icon={<UserAddOutlined />} 
+                    <Button
+                        key="quickAdd"
+                        type="primary"
+                        icon={<UserAddOutlined />}
                         onClick={() => setIsQuickAddOpen(true)}
                     >
                         Thêm nhanh khách hàng

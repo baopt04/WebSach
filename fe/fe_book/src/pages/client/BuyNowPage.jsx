@@ -84,16 +84,30 @@ export default function BuyNowPage() {
 
   const validateGuestForm = () => {
     const errors = {};
+    const hoTen = String(guestForm.hoTen || '').trim();
     const phone = String(guestForm.soDienThoai || '').trim();
     const email = String(guestForm.email || '').trim();
-    if (!String(guestForm.hoTen || '').trim()) errors.hoTen = 'Vui lòng nhập họ và tên';
+    const diaChi = String(guestForm.diaChiChiTiet || '').trim();
+
+    if (!hoTen) errors.hoTen = 'Vui lòng nhập họ và tên';
+    else if (hoTen.length > 50) errors.hoTen = 'Họ tên không được vượt quá 50 ký tự';
+
+    const phoneRegex = /^(0|84)(3|5|7|8|9)[0-9]{8}$/;
     if (!phone) errors.soDienThoai = 'Vui lòng nhập số điện thoại';
-    else if (!/^(0|\+84)\d{9,10}$/.test(phone)) errors.soDienThoai = 'Số điện thoại không hợp lệ';
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = 'Email không hợp lệ';
+    else if (!phoneRegex.test(phone)) errors.soDienThoai = 'Số điện thoại không hợp lệ (VD: 0987123456)';
+
+    if (email) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = 'Email không hợp lệ';
+      else if (email.length > 255) errors.email = 'Email tối đa 255 ký tự';
+    }
+
     if (!guestForm.idTinhThanh) errors.idTinhThanh = 'Vui lòng chọn Tỉnh/Thành phố';
     if (!guestForm.idQuanHuyen) errors.idQuanHuyen = 'Vui lòng chọn Quận/Huyện';
     if (!guestForm.idPhuongXa) errors.idPhuongXa = 'Vui lòng chọn Phường/Xã';
-    if (!String(guestForm.diaChiChiTiet || '').trim()) errors.diaChiChiTiet = 'Vui lòng nhập địa chỉ cụ thể';
+
+    if (!diaChi) errors.diaChiChiTiet = 'Vui lòng nhập địa chỉ cụ thể';
+    else if (diaChi.length > 255) errors.diaChiChiTiet = 'Địa chỉ tối đa 255 ký tự';
+
     setGuestErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -199,17 +213,24 @@ export default function BuyNowPage() {
       align: 'center',
       width: 140,
       render: (_, record) => (
-        <InputNumber
-          min={1}
-          value={record.soLuong}
-          onChange={(val) => {
-            const next = Math.max(Number(val) || 1, 1);
-            const nextItem = { ...record, soLuong: next };
-            setItem(nextItem);
-            sessionStorage.setItem(STORAGE_KEY, JSON.stringify(nextItem));
-          }}
-          style={{ width: 96 }}
-        />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
+          <InputNumber
+            min={1}
+            max={5}
+            value={record.soLuong}
+            onChange={(val) => {
+              if (val > 5) {
+                message.warning('Bạn chỉ được mua tối đa 5 sản phẩm!');
+                val = 5;
+              }
+              const next = Math.max(Number(val) || 1, 1);
+              const nextItem = { ...record, soLuong: next };
+              setItem(nextItem);
+              sessionStorage.setItem(STORAGE_KEY, JSON.stringify(nextItem));
+            }}
+            style={{ width: 96 }}
+          />
+        </div>
       ),
     },
     {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Modal, Form, Input, message } from 'antd';
-import { createTaiKhoan } from '../../../services/AccountService';
+import { createKhachHangNhanh } from '../../../services/PosSerivce';
 
 const QuickAddCustomerModal = ({ visible, onCancel, onSuccess }) => {
     const [form] = Form.useForm();
@@ -9,27 +9,33 @@ const QuickAddCustomerModal = ({ visible, onCancel, onSuccess }) => {
     const handleSubmit = async () => {
         try {
             const values = await form.validateFields();
-            setLoading(true);
 
-            // Mocking creation for POS quick add
-            // In a real app, you might need more fields, but for quick add, we'll send name and phone
-            const payload = {
-                hoten: values.hoten,
-                sodienthoai: values.sdt,
-                email: `${values.sdt}@pos-quick-add.com`, // dummy email if required by backend
-                matkhau: '123456', // default password
-                vaitro: 'CUSTOMER'
-            };
+            Modal.confirm({
+                title: 'Xác nhận thêm khách hàng?',
+                content: `Bạn có chắc chắn muốn thêm khách hàng ${values.hoten} với số điện thoại ${values.sdt}?`,
+                okText: 'Xác nhận',
+                cancelText: 'Hủy',
+                onOk: async () => {
+                    setLoading(true);
+                    try {
+                        const payload = {
+                            hoTen: values.hoten,
+                            soDienThoai: values.sdt
+                        };
 
-            await createTaiKhoan(payload);
-            message.success("Thêm khách hàng thành công!");
-            onSuccess();
-            form.resetFields();
+                        await createKhachHangNhanh(payload);
+                        message.success("Thêm khách hàng thành công!");
+                        onSuccess();
+                        form.resetFields();
+                    } catch (error) {
+                        console.error("Lỗi thêm khách hàng:", error);
+                        message.error("Không thể thêm khách hàng nhanh");
+                    } finally {
+                        setLoading(false);
+                    }
+                }
+            });
         } catch (error) {
-            console.error("Lỗi thêm khách hàng:", error);
-            message.error("Không thể thêm khách hàng nhanh");
-        } finally {
-            setLoading(false);
         }
     };
 

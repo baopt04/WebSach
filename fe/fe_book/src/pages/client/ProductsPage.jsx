@@ -278,7 +278,8 @@ const ProductsPage = () => {
   useEffect(() => {
     let result = allProducts.filter((p) => {
       if (p.price < priceRange[0] || p.price > priceRange[1]) return false;
-      if (searchText && !p.title.toLowerCase().includes(searchText.toLowerCase())) return false;
+      const query = searchText.trim().toLowerCase();
+      if (query && !p.title.toLowerCase().includes(query)) return false;
       return true;
     });
 

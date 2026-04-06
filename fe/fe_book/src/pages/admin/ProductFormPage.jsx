@@ -34,10 +34,10 @@ import {
 import { getAllTheLoai } from '../../services/TheLoaiService';
 import { getAllNhaXuatBan } from '../../services/NhaXuatBanService';
 import { getAllTacGia } from '../../services/TacGiaService';
-import { 
-  getTacGiaBySach, 
-  createSachTacGia, 
-  deleteSachTacGia 
+import {
+  getTacGiaBySach,
+  createSachTacGia,
+  deleteSachTacGia
 } from '../../services/SachTacGiaService';
 import './AdminPage.css';
 
@@ -94,10 +94,9 @@ const ProductFormPage = () => {
         getTacGiaBySach(id)
       ]);
 
-      // Lấy tác giả đầu tiên (giả sử sách chỉ có 1 tác giả chính trong form này)
       const mainAuthor = (Array.isArray(mappings) && mappings.length > 0) ? mappings[0] : null;
       const idTacGia = mainAuthor ? mainAuthor.idTacGia : null;
-      
+
       setOriginalTacGiaId(idTacGia);
 
       form.setFieldsValue({
@@ -115,7 +114,6 @@ const ProductFormPage = () => {
         trangThai: product.trangThai,
       });
 
-      // Load images
       const images = await getSachImages(id);
       const formattedImages = images.map(img => ({
         uid: img.id,
@@ -142,14 +140,11 @@ const ProductFormPage = () => {
   const handleChange = ({ fileList: newFileList }) => setFileList(newFileList);
 
   const handleRemove = async (file) => {
-    // Nếu là ảnh đã có trên server (có uid từ database)
     if (isEdit && typeof file.uid === 'number') {
-      // Gọi API xóa ở background, không chờ
       deleteSachImage(id, file.uid)
         .then(() => message.success('Đã xóa ảnh trên máy chủ'))
         .catch(() => message.error('Lỗi khi xóa ảnh trên máy chủ'));
     }
-    // Trả về true để xóa khỏi UI ngay lập tức
     return true;
   };
 
@@ -164,14 +159,13 @@ const ProductFormPage = () => {
         setSubmitting(true);
         try {
           const { idTacGia, ...formValues } = values;
-          
-          // Chuẩn bị dữ liệu JSON cho Sách
-          const productData = { 
+
+          const productData = {
             ...formValues,
+            tenSach: formValues.tenSach ? formValues.tenSach.trim() : '',
             namXuatBan: formValues.namXuatBan ? formValues.namXuatBan.year() : null
           };
 
-          // Lọc ra các file mới (chưa có url/không phải từ server)
           const newImages = fileList
             .filter(file => !file.url)
             .map(file => file.originFileObj);
@@ -179,8 +173,7 @@ const ProductFormPage = () => {
           let savedBook;
           if (isEdit) {
             savedBook = await updateSachMultipart(id, productData, newImages);
-            
-            // Xử lý cập nhật mapping Tác giả
+
             if (idTacGia !== originalTacGiaId) {
               if (originalTacGiaId) {
                 await deleteSachTacGia(id, originalTacGiaId);
@@ -193,8 +186,7 @@ const ProductFormPage = () => {
           } else {
             savedBook = await createSachMultipart(productData, newImages);
             const newId = savedBook.id;
-            
-            // Tạo mapping Tác giả mới
+
             if (idTacGia) {
               await createSachTacGia({ idSach: newId, idTacGia, vaiTro: "Tác giả chính" });
             }
@@ -231,6 +223,7 @@ const ProductFormPage = () => {
           layout="vertical"
           onFinish={onFinish}
           initialValues={{ trangThai: true }}
+          scrollToFirstError
         >
           <Row gutter={24}>
             <Col xs={24} lg={16}>
@@ -239,7 +232,12 @@ const ProductFormPage = () => {
                   <Form.Item
                     name="tenSach"
                     label="Tên sách"
-                    rules={[{ required: true, message: 'Vui lòng nhập tên sách' }]}
+                    rules={[
+                      { required: true, message: 'Vui lòng nhập tên sách' },
+                      { whitespace: true, message: 'Tên sách không được chỉ chứa khoảng trắng' },
+                      { min: 5, message: 'Tên sách phải có ít nhất 5 ký tự' },
+                      { max: 200, message: 'Tên sách không được vượt quá 200 ký tự' }
+                    ]}
                   >
                     <Input placeholder="Ví dụ: Đắc Nhân Tâm" />
                   </Form.Item>
@@ -249,7 +247,17 @@ const ProductFormPage = () => {
                   <Form.Item
                     name="giaBan"
                     label="Giá bán (VND)"
-                    rules={[{ required: true, message: 'Vui lòng nhập giá bán' }]}
+                    rules={[
+                      { required: true, message: 'Vui lòng nhập giá bán' },
+                      {
+                        validator: (_, value) => {
+                          if (value === undefined || value === null) return Promise.resolve();
+                          if (value <= 0) return Promise.reject(new Error('Giá bán phải lớn hơn 0'));
+                          if (value > 50000000) return Promise.reject(new Error('Giá bán không được vượt quá 50,000,000 VND'));
+                          return Promise.resolve();
+                        }
+                      }
+                    ]}
                   >
                     <InputNumber
                       style={{ width: '100%' }}
@@ -263,9 +271,13 @@ const ProductFormPage = () => {
                   <Form.Item
                     name="soLuong"
                     label="Số lượng tồn kho"
-                    rules={[{ required: true, message: 'Vui lòng nhập số lượng' }]}
+                    rules={[
+                      { required: true, message: 'Vui lòng nhập số lượng' },
+                      { type: 'integer', message: 'Số lượng phải là số nguyên' },
+                      { min: 0, type: 'number', message: 'Số lượng phải lớn hơn hoặc bằng 0' }
+                    ]}
                   >
-                    <InputNumber style={{ width: '100%' }} min={0} />
+                    <InputNumber style={{ width: '100%' }} />
                   </Form.Item>
                 </Col>
 
@@ -300,17 +312,31 @@ const ProductFormPage = () => {
                 </Col>
 
                 <Col span={8}>
-                  <Form.Item name="soTrang" label="Số trang">
-                    <InputNumber style={{ width: '100%' }} min={1} />
+                  <Form.Item 
+                    name="soTrang" 
+                    label="Số trang"
+                    rules={[
+                      { type: 'integer', message: 'Số trang phải là số nguyên' },
+                      { min: 1, type: 'number', message: 'Số trang phải lớn hơn 0' }
+                    ]}
+                  >
+                    <InputNumber style={{ width: '100%' }} />
                   </Form.Item>
                 </Col>
 
                 <Col span={8}>
-                  <Form.Item name="namXuatBan" label="Năm xuất bản">
+                  <Form.Item 
+                    name="namXuatBan" 
+                    label="Năm xuất bản"
+                    rules={[{ required: true, message: 'Vui lòng chọn năm xuất bản' }]}
+                  >
                     <DatePicker
                       picker="year"
                       style={{ width: '100%' }}
                       placeholder="Chọn năm"
+                      disabledDate={(current) => {
+                        return current && current.year() > dayjs().year();
+                      }}
                     />
                   </Form.Item>
                 </Col>
@@ -355,7 +381,19 @@ const ProductFormPage = () => {
                   onPreview={handlePreview}
                   onChange={handleChange}
                   onRemove={handleRemove}
-                  beforeUpload={() => false} // Không upload tự động
+                  beforeUpload={(file) => {
+                    const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/jpg' || file.type === 'image/webp';
+                    if (!isJpgOrPng) {
+                      message.error('Bạn chỉ có thể tải lên file định dạng JPG/PNG/WEBP!');
+                      return Upload.LIST_IGNORE;
+                    }
+                    const isLt5M = file.size / 1024 / 1024 < 5;
+                    if (!isLt5M) {
+                      message.error('Hình ảnh phải nhỏ hơn 5MB!');
+                      return Upload.LIST_IGNORE;
+                    }
+                    return false;
+                  }}
                   multiple
                   maxCount={5}
                 >

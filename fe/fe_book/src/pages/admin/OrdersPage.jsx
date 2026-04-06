@@ -212,6 +212,7 @@ const OrdersPage = () => {
             onChange={handleSearchDate}
             style={{ width: 250 }}
             placeholder={['Từ ngày', 'Đến ngày']}
+            disabledDate={(current) => current && current > dayjs().endOf('day')}
           />
           <Tooltip title="Làm mới">
             <Button icon={<ReloadOutlined />} onClick={handleReset} />

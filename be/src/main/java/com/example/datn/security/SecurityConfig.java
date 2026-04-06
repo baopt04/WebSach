@@ -38,10 +38,8 @@ public class SecurityConfig {
 
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-                // Xử lý lỗi xác thực 401
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthEntryPoint))
 
-                // Phân quyền cho các role
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**" ).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/customer/v1/hoa-don/tao-don").permitAll()

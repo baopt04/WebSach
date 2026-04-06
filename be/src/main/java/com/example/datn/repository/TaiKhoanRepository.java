@@ -1,6 +1,7 @@
 package com.example.datn.repository;
 
 import com.example.datn.entity.TaiKhoan;
+import com.example.datn.enums.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -27,5 +28,7 @@ public interface TaiKhoanRepository extends JpaRepository<TaiKhoan, Integer> {
     List<TaiKhoan> searchByKeyword(@Param("keyword") String keyword);
 
     List<TaiKhoan> findAllByOrderByNgayCapNhatDesc();
+
+    List<TaiKhoan> findByVaiTroOrderByNgayCapNhatDesc(Role vaiTro);
 
 }

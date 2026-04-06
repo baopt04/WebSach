@@ -73,21 +73,31 @@ const CategoriesPage = () => {
     setDetailOpen(true);
   };
 
-  const handleSave = async (values) => {
-    try {
-      if (editingItem) {
-        await updateTheLoai(editingItem.id, values);
-        message.success('Cập nhật thể loại thành công');
-      } else {
-        await createTheLoai(values);
-        message.success('Thêm thể loại thành công');
+  const handleSave = (values) => {
+    Modal.confirm({
+      title: editingItem ? 'Xác nhận cập nhật thể loại?' : 'Xác nhận thêm thể loại mới?',
+      content: editingItem 
+        ? `Bạn có chắc chắn muốn đổi tên thành "${values.tenTheLoai}"?`
+        : `Bạn có chắc chắn muốn thêm thể loại mới "${values.tenTheLoai}"?`,
+      okText: 'Xác nhận',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          if (editingItem) {
+            await updateTheLoai(editingItem.id, values);
+            message.success('Cập nhật thể loại thành công');
+          } else {
+            await createTheLoai(values);
+            message.success('Thêm thể loại thành công');
+          }
+          setModalOpen(false);
+          fetchCategories();
+        } catch (error) {
+          console.error('Lỗi lưu thể loại:', error);
+          message.error('Lỗi: ' + (error.message || 'Không thể lưu thông tin'));
+        }
       }
-      setModalOpen(false);
-      fetchCategories();
-    } catch (error) {
-      console.error('Lỗi lưu thể loại:', error);
-      message.error('Lỗi: ' + (error.message || 'Không thể lưu thông tin'));
-    }
+    });
   };
 
   const handleDelete = async (id) => {
@@ -178,16 +188,19 @@ const CategoriesPage = () => {
           form={form}
           layout="vertical"
           onFinish={handleSave}
+          validateTrigger="onChange"
         >
           <Form.Item
             name="tenTheLoai"
             label="Tên thể loại"
             rules={[
               { required: true, message: 'Vui lòng nhập tên thể loại' },
-              { min: 2, message: 'Tên thể loại phải có ít nhất 2 ký tự' }
+              { whitespace: true, message: 'Tên thể loại không được chỉ chứa khoảng trắng' },
+              { min: 2, message: 'Tên thể loại phải có ít nhất 2 ký tự' },
+              { max: 50, message: 'Tên thể loại tối đa 50 ký tự' }
             ]}
           >
-            <Input placeholder="Nhập tên thể loại" />
+            <Input placeholder="Ví dụ: Tiểu thuyết, Kỹ năng sống..." />
           </Form.Item>
         </Form>
       </Modal>

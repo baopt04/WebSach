@@ -4,16 +4,7 @@ import './PageHeader.css';
 
 const { Title } = Typography;
 
-/**
- * PageHeader - Tiêu đề trang + nút Thêm mới
- *
- * Props:
- * - title: string
- * - onAdd: () => void — callback khi nhấn nút thêm
- * - addLabel: string (default 'Thêm mới')
- * - extra: ReactNode — node tùy chỉnh thay thế nút thêm mới
- * - showAdd: boolean (default true)
- */
+
 const PageHeader = ({
   title,
   onAdd,

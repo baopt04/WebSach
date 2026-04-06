@@ -53,7 +53,14 @@ const ProductInfo = ({ product }) => {
   const hasDiscount = product.originalPrice && product.originalPrice > product.price;
   const discount = hasDiscount ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : 0;
 
+  const maxQty = Math.min(5, product.stock);
+
   const handleAddToCart = async () => {
+    if (qty > maxQty) {
+      message.warning(`Bạn chỉ được mua tối đa ${maxQty} sản phẩm!`);
+      return;
+    }
+
     const isLoggedIn = !!localStorage.getItem('token');
 
     if (isLoggedIn) {
@@ -70,6 +77,10 @@ const ProductInfo = ({ product }) => {
       const guestCart = JSON.parse(localStorage.getItem('guestCart') || '[]');
       const existing = guestCart.find(item => item.idSach === product.id);
       if (existing) {
+        if (existing.soLuong + qty > maxQty) {
+          message.warning(`Giỏ hàng của bạn đã có ${existing.soLuong} sản phẩm này. Chỉ được mua tối đa ${maxQty}!`);
+          return;
+        }
         existing.soLuong += qty;
       } else {
         guestCart.push({
@@ -125,12 +136,16 @@ const ProductInfo = ({ product }) => {
 
       <div className="detail-qty-row">
         <span className="qty-label">Số lượng:</span>
-        <InputNumber
-          min={1}
-          value={qty}
-          onChange={setQty}
-          className="qty-input"
-        />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <InputNumber
+            min={1}
+            max={maxQty}
+            value={qty}
+            onChange={(val) => setQty(val || 1)}
+            className="qty-input"
+          />
+          <span style={{ fontSize: '12px', color: '#888' }}>(Tối đa {maxQty} sản phẩm)</span>
+        </div>
       </div>
 
 
@@ -138,6 +153,10 @@ const ProductInfo = ({ product }) => {
         <button
           className="btn-buy-now-detail"
           onClick={() => {
+            if (qty > maxQty) {
+              message.warning(`Bạn chỉ được mua tối đa ${maxQty} sản phẩm!`);
+              return;
+            }
             const buyNowItem = {
               idSach: product.id,
               tenSach: product.title,

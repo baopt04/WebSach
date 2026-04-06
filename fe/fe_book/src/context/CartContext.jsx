@@ -16,7 +16,6 @@ export const CartProvider = ({ children }) => {
       }
       const data = await getCartDetails();
       if (data && data.chiTietList) {
-        // Tổng số lượng sản phẩm (cộng dồn theo từng dòng)
         const total = data.chiTietList.reduce((sum, line) => sum + (Number(line.soLuong) || 0), 0);
         setCartCount(total);
       } else {

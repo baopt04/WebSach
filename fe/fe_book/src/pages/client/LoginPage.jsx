@@ -19,14 +19,21 @@ const LoginPage = () => {
   }, []);
 
   const handleLogin = async () => {
-    if (!email || !matKhau) {
-      message.error("Vui lòng nhập đầy đủ thông tin!");
+    const cleanEmail = email.trim();
+
+    if (!cleanEmail || !matKhau) {
+      message.error("Vui lòng nhập đầy đủ Tài khoản và Mật khẩu!");
+      return;
+    }
+
+    if (matKhau.includes(' ')) {
+      message.error("Mật khẩu không được chứa khoảng trắng!");
       return;
     }
 
     setLoading(true);
     try {
-      const data = await login(email, matKhau);
+      const data = await login(cleanEmail, matKhau);
       if (data && data.token) {
         localStorage.setItem("token", data.token);
         localStorage.setItem("email", data.email || "");
@@ -45,10 +52,10 @@ const LoginPage = () => {
         }
       }
     } catch (error) {
-      if (error.response && error.response.status === 401) {
-        message.error("Email hoặc mật khẩu không chính xác!");
+      if (error.response && [400, 401, 403, 404].includes(error.response.status)) {
+        message.error("Tài khoản hoặc mật khẩu không đúng!");
       } else {
-        message.error("Đăng nhập thất bại. Vui lòng kiểm tra lại!");
+        message.error(error?.response?.data?.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại!");
       }
       console.error("Login error:", error);
     } finally {

@@ -218,13 +218,21 @@ const AccountsPage = () => {
   };
 
   const handleSetDefaultAddress = async (id) => {
-    try {
-      await setDefaultDiaChi(id);
-      message.success('Đã đặt làm mặc định');
-      fetchAddressList(selectedAccountId);
-    } catch (err) {
-      message.error(err.message || 'Lỗi đặt mặc định');
-    }
+    confirm({
+      title: 'Thiết lập địa chỉ mặc định?',
+      content: 'Bạn có chắc chắn muốn đặt địa chỉ này làm địa chỉ nhận hàng mặc định?',
+      okText: 'Đồng ý',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await setDefaultDiaChi(id);
+          message.success('Đã đặt làm mặc định');
+          fetchAddressList(selectedAccountId);
+        } catch (err) {
+          message.error(err.message || 'Lỗi đặt mặc định');
+        }
+      }
+    });
   };
 
   const handleDeleteAddress = (id) => {
@@ -315,10 +323,12 @@ const AccountsPage = () => {
 
   const handleSubmit = (values) => {
     confirm({
-      title: editingItem ? 'Xác nhận cập nhật tài khoản?' : 'Xác nhận thêm tài khoản mới?',
-      content: 'Bạn có chắc chắn những thông tin trên là chính xác?',
-      okText: 'Đồng ý',
-      cancelText: 'Hủy',
+      title: editingItem ? 'Xác nhận cập nhật tài khoản?' : 'Xác nhận tạo tài khoản mới?',
+      content: editingItem 
+        ? `Bạn có chắc chắn muốn cập nhật thông tin cho tài khoản ${editingItem.hoTen}?`
+        : 'Hệ thống sẽ tạo tài khoản mới với các thông tin bạn đã cung cấp. Tiếp tục?',
+      okText: 'Xác nhận',
+      cancelText: 'Quay lại',
       onOk: async () => {
         try {
           const payload = {
@@ -451,17 +461,39 @@ const AccountsPage = () => {
         cancelText="Hủy"
         width={600}
       >
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Form.Item name="hoTen" label="Họ tên" rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}>
+        <Form form={form} layout="vertical" onFinish={handleSubmit} validateTrigger="onChange">
+          <Form.Item 
+            name="hoTen" 
+            label="Họ tên" 
+            rules={[
+              { required: true, message: 'Vui lòng nhập họ tên' },
+              { whitespace: true, message: 'Họ tên không được chỉ chứa khoảng trắng' },
+              { min: 3, message: 'Họ tên phải có ít nhất 3 ký tự' },
+              { max: 100, message: 'Họ tên tối đa 100 ký tự' },
+              { pattern: /^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀỂưăạảấầẩẫậắằẳẵặẹẻẽềềểỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪễệỉịọỏốồổỗộớờởỡợụủứừỬỮỰỲỴÝỶỸửữựỳỵỷỹ\s|_]+$/, message: 'Họ tên chỉ được chứa chữ cái' }
+            ]}
+          >
             <Input placeholder="Nhập họ và tên" />
           </Form.Item>
-          <Form.Item name="email" label="Email" rules={[{ required: true, message: 'Vui lòng nhập email', type: 'email' }]}>
+          <Form.Item 
+            name="email" 
+            label="Email" 
+            rules={[
+              { required: true, message: 'Vui lòng nhập email' },
+              { type: 'email', message: 'Định dạng email không hợp lệ' },
+              { whitespace: true, message: 'Email không được chứa khoảng trắng' }
+            ]}
+          >
             <Input placeholder="Nhập email" />
           </Form.Item>
-          <Form.Item name="soDienThoai" label="Số điện thoại" rules={[
-            { required: true, message: 'Vui lòng nhập số điện thoại' },
-            { pattern: /(84|0[3|5|7|8|9])+([0-9]{8})\b/, message: 'Số điện thoại không hợp lệ' }
-          ]}>
+          <Form.Item 
+            name="soDienThoai" 
+            label="Số điện thoại" 
+            rules={[
+              { required: true, message: 'Vui lòng nhập số điện thoại' },
+              { pattern: /^(0[3|5|7|8|9])+([0-9]{8})\b$/, message: 'Số điện thoại 10 số, bắt đầu bằng 03, 05, 07, 08, 09' }
+            ]}
+          >
             <Input placeholder="Nhập số điện thoại" />
           </Form.Item>
           <Form.Item name="vaiTro" label="Vai trò" rules={[{ required: true, message: 'Vui lòng chọn vai trò' }]}>
@@ -470,10 +502,26 @@ const AccountsPage = () => {
               <Option value="ROLE_CUSTOMER">Khách hàng</Option>
             </Select>
           </Form.Item>
-          <Form.Item name="ngaySinh" label="Ngày sinh">
+          <Form.Item 
+            name="ngaySinh" 
+            label="Ngày sinh"
+            rules={[
+              { required: true, message: 'Vui lòng chọn ngày sinh' },
+              () => ({
+                validator(_, value) {
+                  if (!value) return Promise.resolve();
+                  const age = dayjs().diff(dayjs(value), 'year');
+                  if (age < 18) {
+                    return Promise.reject(new Error('Tài khoản phải đủ 18 tuổi trở lên'));
+                  }
+                  return Promise.resolve();
+                },
+              }),
+            ]}
+          >
             <DatePicker style={{ width: '100%' }} format="DD-MM-YYYY" placeholder="Chọn ngày sinh" />
           </Form.Item>
-          <Form.Item name="gioiTinh" label="Giới tính" initialValue={1}>
+          <Form.Item name="gioiTinh" label="Giới tính" initialValue={1} rules={[{ required: true, message: 'Vui lòng chọn giới tính' }]}>
             <Select>
               <Option value={1}>Nam</Option>
               <Option value={0}>Nữ</Option>
@@ -586,20 +634,22 @@ const AccountsPage = () => {
         okText="Lưu"
         cancelText="Hủy"
       >
-        <Form form={addressForm} layout="vertical" onFinish={submitAddressForm}>
+        <Form form={addressForm} layout="vertical" onFinish={submitAddressForm} validateTrigger="onChange">
           <Form.Item
             name="hoTen"
-            label="Họ và tên"
+            label="Họ và tên người nhận"
             rules={[
-              { required: true, message: 'Vui lòng nhập Họ Tên' },
+              { required: true, message: 'Vui lòng nhập Họ Tên người nhận' },
+              { whitespace: true, message: 'Họ tên không được chỉ chứa khoảng trắng' },
               { min: 3, message: 'Họ Tên phải có ít nhất 3 ký tự' },
+              { pattern: /^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀỂưăạảấầẩẫậắằẳẵặẹẻẽềềểỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪễệỉịọỏốồổỗộớờởỡợụủứừỬỮỰỲỴÝỶỸửữựỳỵỷỹ\s|_]+$/, message: 'Họ tên chỉ được chứa chữ cái' }
             ]}
           >
-            <Input placeholder="Nhập họ tên" />
+            <Input placeholder="Nhập họ tên người nhận" />
           </Form.Item>
           <Form.Item name="soDienThoai" label="Số điện thoại" rules={[
             { required: true, message: 'Vui lòng nhập số điện thoại' },
-            { pattern: /(84|0[3|5|7|8|9])+([0-9]{8})\b/, message: 'SĐT không hợp lệ' }
+            { pattern: /^(0[3|5|7|8|9])+([0-9]{8})\b$/, message: 'SĐT không hợp lệ (10 số, bắt đầu 03,05,07,08,09)' }
           ]}>
             <Input placeholder="Nhập số điện thoại" />
           </Form.Item>
@@ -644,7 +694,14 @@ const AccountsPage = () => {
               ))}
             </Select>
           </Form.Item>
-          <Form.Item name="diaChiChiTiet" label="Địa chỉ chi tiết" rules={[{ required: true, message: 'Vui lòng nhập Địa chỉ cụ thể' }]}>
+          <Form.Item 
+            name="diaChiChiTiet" 
+            label="Địa chỉ chi tiết" 
+            rules={[
+              { required: true, message: 'Vui lòng nhập Địa chỉ cụ thể' },
+              { min: 5, message: 'Địa chỉ cụ thể quá ngắn (tối thiểu 5 ký tự)' }
+            ]}
+          >
             <Input.TextArea placeholder="Số nhà, ngõ/đường..." rows={3} />
           </Form.Item>
         </Form>

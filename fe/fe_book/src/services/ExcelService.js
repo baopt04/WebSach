@@ -1,14 +1,10 @@
 import * as XLSX from 'xlsx';
 
-/**
- * Xuất dữ liệu thống kê ra file Excel
- * @param {Object} stats Dữ liệu thống kê từ StatisticsPage
- */
+
 export const exportStatisticsToExcel = (stats) => {
   try {
     const { totalOrders, totalRevenue, cancelledOrders, topBooks, yearlyChartData } = stats;
 
-    // 1. Sheet Tổng quan
     const summaryData = [
       ['BÁO CÁO THỐNG KÊ TỔNG QUAN'],
       ['Ngày xuất', new Date().toLocaleString('vi-VN')],
@@ -62,7 +58,7 @@ export const exportStatisticsToExcel = (stats) => {
     // Xuất file
     const fileName = `Bao_cao_thong_ke_${new Date().getTime()}.xlsx`;
     XLSX.writeFile(wb, fileName);
-    
+
     return true;
   } catch (error) {
     console.error('Lỗi khi xuất Excel:', error);

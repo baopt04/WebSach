@@ -54,14 +54,22 @@ const SearchOrderPage = () => {
   const [loading, setLoading] = useState(false);
 
   const handleSearch = async () => {
-    if (!phone || !orderId) {
-      message.error('Vui lòng nhập Số điện thoại và Mã đơn hàng');
+    const cleanPhone = phone.trim();
+    const cleanOrderId = orderId.trim().toUpperCase();
+
+    if (!cleanPhone || !cleanOrderId) {
+      message.error('Vui lòng nhập đầy đủ Số điện thoại và Mã đơn hàng');
       return;
     }
 
-    const phoneRegex = /(84|0[3|5|7|8|9])+([0-9]{8})\b/;
-    if (!phoneRegex.test(phone)) {
-      message.error('Số điện thoại không đúng định dạng');
+    const phoneRegex = /^(0|84)(3|5|7|8|9)[0-9]{8}$/;
+    if (!phoneRegex.test(cleanPhone)) {
+      message.error('Số điện thoại không đúng định dạng (VD: 0987123456)');
+      return;
+    }
+
+    if (!cleanOrderId.startsWith('HD')) {
+      message.error('Mã hóa đơn không hợp lệ (Phải bắt đầu bằng chữ "HD")');
       return;
     }
 

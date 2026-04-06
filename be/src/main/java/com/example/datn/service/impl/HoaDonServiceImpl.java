@@ -5,6 +5,8 @@ import com.example.datn.dto.mail.OrderMailLine;
 import com.example.datn.dto.request.HoaDonChiTietRequest;
 import com.example.datn.dto.request.HoaDonCreateRequest;
 import com.example.datn.dto.request.HoaDonUpdateRequest;
+import com.example.datn.dto.request.PosHoaDonCreateRequest;
+import com.example.datn.dto.request.PosHoaDonThemHangRequest;
 import com.example.datn.dto.request.TrangThaiHoaDonRequest;
 import com.example.datn.dto.response.HoaDonChiTietResponse;
 import com.example.datn.dto.response.HoaDonDetailResponse;
@@ -33,16 +35,23 @@ import com.example.datn.repository.MaGiamGiaRepository;
 import com.example.datn.repository.SachHinhAnhRepository;
 import com.example.datn.repository.SachRepository;
 import com.example.datn.repository.TaiKhoanRepository;
+import com.example.datn.exception.AppException;
 import com.example.datn.service.HoaDonOrderMailService;
 import com.example.datn.service.HoaDonService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 
@@ -523,6 +532,140 @@ public class HoaDonServiceImpl implements HoaDonService {
         LocalDateTime end = denNgay.atTime(23, 59, 59);
         return hoaDonRepository.findByNgayTaoBetween(start, end)
                 .stream().map(this::mapToResponse).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public HoaDonDetailResponse taoHoaDonBanTaiQuay(PosHoaDonCreateRequest request) {
+        TaiKhoan nhanVien = getCurrentTaiKhoanOrThrow();
+        LocalDateTime now = LocalDateTime.now();
+
+        TaiKhoan khachHang = null;
+        if (request.getIdKhachHang() != null) {
+            khachHang = taiKhoanRepository.findById(request.getIdKhachHang())
+                    .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy khách hàng"));
+        }
+
+        String maHoaDon = "HD" + String.format("%05d", new Random().nextInt(100000));
+
+        HoaDon hoaDon = HoaDon.builder()
+                .nhanVien(nhanVien)
+                .khachHang(khachHang)
+                .hoTen(request.getHoTen())
+                .soDienThoai(request.getSoDienThoai())
+                .email(request.getEmail())
+                .ghiChu(request.getGhiChu())
+                .maHoaDon(maHoaDon)
+                .trangThai(OrderStatus.TAO_HOA_DON)
+                .loaiHoaDon(TypeBill.OFFLINE)
+                .phuongThuc(PaymentMethod.TIEN_MAT)
+                .phiShip(BigDecimal.ZERO)
+                .tongTienHang(BigDecimal.ZERO)
+                .giamGia(BigDecimal.ZERO)
+                .ngayTao(now)
+                .ngayCapNhat(now)
+                .build();
+
+        hoaDon = hoaDonRepository.save(hoaDon);
+
+        lichSuDonHangRepository.save(LichSuDonHang.builder()
+                .taiKhoan(nhanVien)
+                .hoaDon(hoaDon)
+                .trangThai(OrderStatus.TAO_HOA_DON)
+                .ghiChu("Tạo hóa đơn bán tại quầy")
+                .ngayTao(now)
+                .build());
+
+        return getHoaDonChiTietByHoaDonId(hoaDon.getId());
+    }
+
+    @Override
+    @Transactional
+    public HoaDonDetailResponse themHangBanTaiQuay(Integer idHoaDon, PosHoaDonThemHangRequest request) {
+        TaiKhoan nhanVien = getCurrentTaiKhoanOrThrow();
+        HoaDon hoaDon = hoaDonRepository.findById(idHoaDon)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy hóa đơn"));
+        assertHoaDonBanTaiQuayHopLe(hoaDon, nhanVien);
+
+        Sach sach = sachRepository.findById(request.getIdSach())
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy sách"));
+        if (Boolean.FALSE.equals(sach.getTrangThai())) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Sách không còn được bán");
+        }
+        int ton = sach.getSoLuong() != null ? sach.getSoLuong() : 0;
+        if (ton < request.getSoLuong()) {
+            throw new AppException(HttpStatus.BAD_REQUEST,
+                    "Không đủ tồn kho cho \"" + sach.getTenSach() + "\" (còn " + ton + ")");
+        }
+        BigDecimal giaBan = sach.getGiaBan() != null ? sach.getGiaBan() : BigDecimal.ZERO;
+        LocalDateTime now = LocalDateTime.now();
+
+        int soLuongThem = request.getSoLuong();
+        int tonMoi = ton - soLuongThem;
+        sach.setSoLuong(tonMoi);
+        if (tonMoi == 0) {
+            sach.setTrangThai(false);
+        }
+        sachRepository.save(sach);
+
+        Optional<HoaDonChiTiet> existingOpt = hoaDonChiTietRepository.findByHoaDon_IdAndSach_Id(idHoaDon, sach.getId());
+        if (existingOpt.isPresent()) {
+            HoaDonChiTiet ct = existingOpt.get();
+            int oldQty = ct.getSoLuong() != null ? ct.getSoLuong() : 0;
+            BigDecimal oldLine = ct.getDonGia().multiply(BigDecimal.valueOf(oldQty));
+            BigDecimal themLine = giaBan.multiply(BigDecimal.valueOf(soLuongThem));
+            int newQty = oldQty + soLuongThem;
+            ct.setSoLuong(newQty);
+            ct.setDonGia(oldLine.add(themLine).divide(BigDecimal.valueOf(newQty), 2, RoundingMode.HALF_UP));
+            ct.setNgayCapNhat(now);
+            hoaDonChiTietRepository.save(ct);
+        } else {
+            HoaDonChiTiet chiTiet = HoaDonChiTiet.builder()
+                    .hoaDon(hoaDon)
+                    .sach(sach)
+                    .soLuong(soLuongThem)
+                    .donGia(giaBan)
+                    .trangThai(OrderStatus.TAO_HOA_DON)
+                    .ngayTao(now)
+                    .ngayCapNhat(now)
+                    .build();
+            hoaDonChiTietRepository.save(chiTiet);
+        }
+
+        recalcTongTienHangVaLuu(hoaDon);
+        return getHoaDonChiTietByHoaDonId(idHoaDon);
+    }
+
+    private TaiKhoan getCurrentTaiKhoanOrThrow() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            throw new AppException(HttpStatus.UNAUTHORIZED, "Chưa đăng nhập");
+        }
+        String email = auth.getName();
+        return taiKhoanRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(HttpStatus.UNAUTHORIZED, "Không tìm thấy tài khoản"));
+    }
+
+    private void assertHoaDonBanTaiQuayHopLe(HoaDon h, TaiKhoan nhanVien) {
+        if (h.getLoaiHoaDon() != TypeBill.OFFLINE) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Hóa đơn không phải bán tại quầy");
+        }
+        if (h.getTrangThai() != OrderStatus.TAO_HOA_DON) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Chỉ thao tác được khi hóa đơn đang ở trạng thái tạo hóa đơn (nháp)");
+        }
+        if (h.getNhanVien() == null || !h.getNhanVien().getId().equals(nhanVien.getId())) {
+            throw new AppException(HttpStatus.FORBIDDEN, "Bạn không phải nhân viên tạo hóa đơn này");
+        }
+    }
+
+    private void recalcTongTienHangVaLuu(HoaDon hoaDon) {
+        List<HoaDonChiTiet> list = hoaDonChiTietRepository.findByHoaDonId(hoaDon.getId());
+        BigDecimal sum = list.stream()
+                .map(ct -> ct.getDonGia().multiply(BigDecimal.valueOf(ct.getSoLuong())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        hoaDon.setTongTienHang(sum);
+        hoaDon.setNgayCapNhat(LocalDateTime.now());
+        hoaDonRepository.save(hoaDon);
     }
 
 }

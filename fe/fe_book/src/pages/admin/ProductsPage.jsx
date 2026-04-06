@@ -3,7 +3,8 @@ import { Card, Space, Button, Image, Tag, message, Popconfirm, Tooltip, Modal, D
 import {
   EditOutlined,
   DeleteOutlined,
-  EyeOutlined
+  EyeOutlined,
+  DownloadOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import DataTable from '../../components/admin/DataTable';
@@ -38,7 +39,6 @@ const ProductsPage = () => {
       const resData = await getAllSach();
       const products = Array.isArray(resData) ? resData : (resData?.data || []);
 
-      // Lấy tất cả tác giả cho từng cuốn sách để hiển thị ở bảng
       const enrichedProducts = await Promise.all(
         products.map(async (book) => {
           try {
@@ -77,7 +77,6 @@ const ProductsPage = () => {
         getTacGiaBySach(id)
       ]);
 
-      // Gắn tên tác giả vào detailItem để hiển thị
       const authors = Array.isArray(mappings) ? mappings.map(m => m.tenTacGia).join(', ') : '';
 
       setDetailItem({ ...product, tenTacGia: authors || 'Chưa cập nhật' });
@@ -112,6 +111,21 @@ const ProductsPage = () => {
     } catch (error) {
       console.error('Lỗi xóa sản phẩm:', error);
       message.error('Lỗi: ' + (error.message || 'Không thể xóa sản phẩm'));
+    }
+  };
+
+  const downloadQRCode = () => {
+    const canvas = document.getElementById('qrcode-container')?.querySelector('canvas');
+    if (canvas) {
+      const url = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.download = `QRCode_${detailItem?.maVach || 'product'}.png`;
+      a.href = url;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else {
+      message.error('Không tìm thấy mã QR để tải xuống');
     }
   };
 
@@ -315,9 +329,28 @@ const ProductsPage = () => {
                   </Image.PreviewGroup>
 
                   {detailItem.maVach && (
-                    <div style={{ marginTop: 24, padding: 12, background: '#fff', border: '1px solid #eee', borderRadius: 8, display: 'inline-block' }}>
-                      <QRCode value={detailItem.maVach} size={130} bordered={false} color="#000" />
-                      <div style={{ marginTop: 8, fontSize: 13, color: '#000', fontWeight: 600 }}>{detailItem.maVach}</div>
+                    <div style={{ marginTop: 24, textAlign: 'center' }}>
+                      <div id="qrcode-container" style={{ padding: 12, background: '#fff', border: '1px solid #eee', borderRadius: '8px', display: 'inline-block' }}>
+                        <QRCode
+                          value={detailItem.maVach}
+                          size={180}
+                          bordered={true}
+                          errorLevel="H"
+                          color="#000"
+                          style={{ padding: 16, background: '#fff' }}
+                        />
+                        <div style={{ marginTop: 8, fontSize: 13, color: '#000', fontWeight: 600 }}>{detailItem.maVach}</div>
+                      </div>
+                      <div style={{ marginTop: 12 }}>
+                        <Button
+                          icon={<DownloadOutlined />}
+                          onClick={downloadQRCode}
+                          type="primary"
+                          style={{ background: '#52c41a', borderColor: '#52c41a' }}
+                        >
+                          Tải mã QR
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>

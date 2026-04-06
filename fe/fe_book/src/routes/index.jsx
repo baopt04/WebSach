@@ -74,7 +74,7 @@ const router = createBrowserRouter([
       { path: 'authors', element: <AuthorsPage /> },
       { path: 'categories', element: <CategoriesPage /> },
       { path: 'publishers', element: <PublishersPage /> },
-      { path: 'statistics', element: <StatisticsPage /> },
+      { path: 'dashboard', element: <DashboardPage /> },
       { path: 'pos', element: <POSPage /> },
     ],
   },

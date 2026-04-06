@@ -117,6 +117,16 @@ export const searchSach = async (keyword) => {
     }
 };
 
+export const getSachByMaVach = async (maVach) => {
+    try {
+        const res = await axiosClient.get(`${BASE}/ma-vach/${maVach}`);
+        return res.data;
+    } catch (error) {
+        const products = await searchSach(maVach);
+        return Array.isArray(products) ? products[0] : (products?.data?.[0] || null);
+    }
+};
+
 export const getSachByTheLoai = async (idTheLoai) => {
     try {
         const res = await axiosClient.get(`${BASE}/the-loai/${idTheLoai}`);

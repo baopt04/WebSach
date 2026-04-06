@@ -40,9 +40,7 @@ export const updateCartItem = async (id, quantity) => {
     }
 };
 
-/**
- * 🔹 Xóa sản phẩm khỏi giỏ hàng
- */
+
 export const removeCartItem = async (id) => {
     try {
         if (!id) throw new Error("ID không hợp lệ");
@@ -50,7 +48,6 @@ export const removeCartItem = async (id) => {
         const res = await axiosClient.delete(`${BASE}/xoa/${id}`);
         return res.data;
     } catch (error) {
-        // Đã xóa rồi (BE đã xóa khi tạo đơn / gọi trùng) — coi như thành công
         const httpStatus = error.response?.status;
         const data = error.response?.data;
         const msg =

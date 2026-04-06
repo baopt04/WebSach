@@ -1,4 +1,5 @@
-import { Row, Col, Card, Statistic, Typography, Table, Tag } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Row, Col, Card, Typography, Table, Tag, Spin } from 'antd';
 import {
   ShoppingOutlined,
   FileTextOutlined,
@@ -8,84 +9,29 @@ import {
   ArrowUpOutlined,
   ArrowDownOutlined,
 } from '@ant-design/icons';
+import dayjs from 'dayjs';
+import * as StatisticalService from '../../services/StatisticalService';
 import './DashboardPage.css';
 
 const { Title, Text } = Typography;
 
-
-const kpiData = [
-  {
-    title: 'Doanh thu tháng',
-    value: 48500000,
-    prefix: '',
-    suffix: '₫',
-    icon: <DollarOutlined />,
-    color: '#4096ff',
-    bg: '#e6f4ff',
-    trend: '+12.5%',
-    up: true,
-  },
-  {
-    title: 'Đơn hàng',
-    value: 238,
-    icon: <FileTextOutlined />,
-    color: '#52c41a',
-    bg: '#f6ffed',
-    trend: '+8.3%',
-    up: true,
-  },
-  {
-    title: 'Sản phẩm',
-    value: 1450,
-    icon: <ShoppingOutlined />,
-    color: '#fa8c16',
-    bg: '#fff7e6',
-    trend: '+3.2%',
-    up: true,
-  },
-  {
-    title: 'Tài khoản',
-    value: 3892,
-    icon: <UserOutlined />,
-    color: '#722ed1',
-    bg: '#f9f0ff',
-    trend: '-1.2%',
-    up: false,
-  },
-];
-
-
-const revenueData = [
-  { month: 'T1', value: 32000000 },
-  { month: 'T2', value: 28000000 },
-  { month: 'T3', value: 41000000 },
-  { month: 'T4', value: 38000000 },
-  { month: 'T5', value: 45000000 },
-  { month: 'T6', value: 52000000 },
-  { month: 'T7', value: 48000000 },
-  { month: 'T8', value: 61000000 },
-  { month: 'T9', value: 55000000 },
-  { month: 'T10', value: 67000000 },
-  { month: 'T11', value: 72000000 },
-  { month: 'T12', value: 48500000 },
-];
-const maxRevenue = Math.max(...revenueData.map((d) => d.value));
-
-
-const recentOrders = [
-  { key: 1, code: 'DH001', customer: 'Nguyễn Văn A', date: '27/03/2026', total: 250000, status: 'delivered' },
-  { key: 2, code: 'DH002', customer: 'Trần Thị B', date: '27/03/2026', total: 185000, status: 'processing' },
-  { key: 3, code: 'DH003', customer: 'Lê Minh C', date: '26/03/2026', total: 420000, status: 'shipped' },
-  { key: 4, code: 'DH004', customer: 'Phạm Hồng D', date: '26/03/2026', total: 95000, status: 'pending' },
-  { key: 5, code: 'DH005', customer: 'Hoàng Văn E', date: '25/03/2026', total: 310000, status: 'cancelled' },
-];
+const MOCK_ACCOUNTS = 3892;
 
 const statusConfig = {
-  pending: { color: 'warning', label: 'Chờ xác nhận' },
-  processing: { color: 'processing', label: 'Đang xử lý' },
-  shipped: { color: 'purple', label: 'Đang giao' },
-  delivered: { color: 'success', label: 'Đã giao' },
-  cancelled: { color: 'error', label: 'Đã hủy' },
+  CHO_XAC_NHAN: { color: 'warning', label: 'Chờ xác nhận' },
+  DA_XAC_NHAN: { color: 'processing', label: 'Đã xác nhận' },
+  DANG_CHUAN_BI_HANG: { color: 'processing', label: 'Đang chuẩn bị' },
+  DANG_GIAO: { color: 'purple', label: 'Đang giao' },
+  DA_THANH_TOAN: { color: 'success', label: 'Đã thanh toán' },
+  THANH_CONG: { color: 'success', label: 'Thành công' },
+  DA_HUY: { color: 'error', label: 'Đã hủy' },
+};
+
+const formatMoneyShorthand = (val) => {
+  if (!val) return '0₫';
+  if (val >= 1000000) return (val / 1000000).toFixed(1) + 'tr₫';
+  if (val >= 1000) return (val / 1000).toFixed(0) + 'k₫';
+  return val + '₫';
 };
 
 const orderColumns = [
@@ -110,32 +56,163 @@ const orderColumns = [
   },
 ];
 
-// Top sách bán chạy
-const topBooks = [
-  { key: 1, title: 'Đắc Nhân Tâm', author: 'Dale Carnegie', sold: 215, revenue: 32250000 },
-  { key: 2, title: 'Nhà Giả Kim', author: 'Paulo Coelho', sold: 198, revenue: 29700000 },
-  { key: 3, title: 'Sapiens', author: 'Yuval Noah Harari', sold: 167, revenue: 43420000 },
-  { key: 4, title: 'Tư Duy Nhanh Chậm', author: 'Daniel Kahneman', sold: 143, revenue: 37180000 },
-  { key: 5, title: 'Muôn Kiếp Nhân Sinh', author: 'Brian Weiss', sold: 128, revenue: 22400000 },
-];
-
 const topBookColumns = [
   { title: 'STT', key: 'stt', width: 60, align: 'center', render: (_, __, i) => i + 1 },
-  { title: 'Tên sách', dataIndex: 'title', key: 'title', render: (t) => <Text strong>{t}</Text> },
-  { title: 'Tác giả', dataIndex: 'author', key: 'author' },
-  { title: 'Đã bán', dataIndex: 'sold', key: 'sold', align: 'center', render: (v) => <Tag color="blue">{v}</Tag> },
+  { title: 'Tên sách', dataIndex: 'tenSach', key: 'tenSach', render: (t) => <Text strong>{t}</Text> },
+  { title: 'Thể loại', dataIndex: 'tenTheLoai', key: 'tenTheLoai' },
+  { title: 'Đã bán', dataIndex: 'soLuongDaBan', key: 'soLuongDaBan', align: 'center', render: (v) => <Tag color="blue">{v}</Tag> },
   {
     title: 'Doanh thu',
-    dataIndex: 'revenue',
-    key: 'revenue',
-    render: (v) => <Text strong style={{ color: '#52c41a' }}>{v.toLocaleString('vi-VN')}₫</Text>,
+    dataIndex: 'doanhThu',
+    key: 'doanhThu',
+    render: (v) => <Text strong style={{ color: '#52c41a' }}>{(v || 0).toLocaleString('vi-VN')}₫</Text>,
   },
 ];
 
 const DashboardPage = () => {
+  const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState({
+    totalOrders: 0,
+    monthlyRevenue: 0,
+    yearlyChartData: Array.from({ length: 12 }, (_, i) => ({ month: `T${i + 1}`, value: 0 })),
+    topBooks: [],
+    recentOrders: [],
+    productsCount: 0,
+    todayStats: {
+      newOrders: 0,
+      processingOrders: 0,
+      successfulOrders: 0,
+      cancelledOrders: 0,
+      todayRevenue: 0
+    }
+  });
+
+  const currentMonth = dayjs().month() + 1;
+  const currentYear = dayjs().year();
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [
+        summary,
+        topBooksList,
+        recentOrdersRes,
+        productsCount,
+        todayStatusRes
+      ] = await Promise.all([
+        StatisticalService.getSummaryStatistics(),
+        StatisticalService.getTop10BestSellingBooks(),
+        StatisticalService.getDonHangGanNhat(),
+        StatisticalService.getTongSanPhamHoatDong(),
+        StatisticalService.getSoDonTheoTrangThaiTheoNgay(dayjs().format('YYYY-MM-DD'))
+      ]);
+
+      const currentMonthData = summary.chiTietTheoThang?.find(
+        d => d.thang === currentMonth && d.nam === currentYear
+      ) || { tongDoanhThu: 0, tongDonHang: 0 };
+
+      const chartDataMap = new Map((summary.chiTietTheoThang || []).filter(d => d.nam === currentYear).map(d => [d.thang, d.tongDoanhThu]));
+      const structuredChartData = Array.from({ length: 12 }, (_, i) => ({
+        month: `T${i + 1}`,
+        value: chartDataMap.get(i + 1) || 0
+      }));
+
+      const formattedRecentOrders = (recentOrdersRes || []).map((o, i) => ({
+        key: i,
+        code: o.maHoaDon,
+        customer: o.hoTenKhachHang,
+        date: dayjs(o.ngayTao).format('DD/MM/YYYY HH:mm'),
+        total: (o.tongTienHang || 0) + (o.phiShip || 0) - (o.giamGia || 0),
+        status: o.trangThai
+      }));
+
+      let newOrders = 0, processingOrders = 0, successfulOrders = 0, cancelledOrders = 0;
+      (todayStatusRes?.theoTrangThai || []).forEach(item => {
+        if (item.trangThai === 'CHO_XAC_NHAN') newOrders += item.soLuong;
+        if (['DA_XAC_NHAN', 'DANG_CHUAN_BI_HANG'].includes(item.trangThai)) processingOrders += item.soLuong;
+        if (item.trangThai === 'THANH_CONG') successfulOrders += item.soLuong;
+        if (item.trangThai === 'DA_HUY') cancelledOrders += item.soLuong;
+      });
+
+      setDashboardData({
+        totalOrders: summary.tongDonHang || 0,
+        monthlyRevenue: currentMonthData.tongDoanhThu || 0,
+        yearlyChartData: structuredChartData,
+        topBooks: topBooksList || [],
+        recentOrders: formattedRecentOrders,
+        productsCount: productsCount || 0,
+        todayStats: {
+          newOrders,
+          processingOrders,
+          successfulOrders,
+          cancelledOrders,
+          todayRevenue: todayStatusRes?.tongDoanhThuThanhCong || 0
+        }
+      });
+    } catch (error) {
+      console.error('Failed to load dashboard:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const kpiData = [
+    {
+      title: 'Doanh thu tháng',
+      value: dashboardData.monthlyRevenue,
+      prefix: '',
+      suffix: '₫',
+      icon: <DollarOutlined />,
+      color: '#4096ff',
+      bg: '#e6f4ff',
+      trend: '+12.5%',
+      up: true,
+    },
+    {
+      title: 'Tổng đơn hàng',
+      value: dashboardData.totalOrders,
+      icon: <FileTextOutlined />,
+      color: '#52c41a',
+      bg: '#f6ffed',
+      trend: '+8.3%',
+      up: true,
+    },
+    {
+      title: 'Tổng sản phẩm',
+      value: dashboardData.productsCount,
+      icon: <ShoppingOutlined />,
+      color: '#fa8c16',
+      bg: '#fff7e6',
+      trend: '+3.2%',
+      up: true,
+    },
+    {
+      title: 'Tài khoản khách hàng',
+      value: MOCK_ACCOUNTS,
+      icon: <UserOutlined />,
+      color: '#722ed1',
+      bg: '#f9f0ff',
+      trend: '-1.2%',
+      up: false,
+    },
+  ];
+
+  const maxRevenue = Math.max(...dashboardData.yearlyChartData.map((d) => d.value), 1000000); // Tối thiểu 1 triệu để cột không quá cao nếu data nhỏ
+
+  if (loading) {
+    return (
+      <div className="dashboard-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <Spin size="large" tip="Đang tải dữ liệu tổng quan..." />
+      </div>
+    );
+  }
+
   return (
     <div className="dashboard-page">
-
       <Row gutter={[16, 16]} className="kpi-row">
         {kpiData.map((kpi, i) => (
           <Col xs={24} sm={12} lg={6} key={i}>
@@ -163,26 +240,28 @@ const DashboardPage = () => {
         ))}
       </Row>
 
-
       <Row gutter={[16, 16]} className="chart-row">
         <Col xs={24} lg={16}>
           <Card
             title={
               <div className="chart-title">
                 <RiseOutlined style={{ color: '#1677ff' }} />
-                <span>Doanh thu theo tháng (2026)</span>
+                <span>Doanh thu theo tháng ({currentYear})</span>
               </div>
             }
             bordered={false}
             className="chart-card"
           >
             <div className="bar-chart">
-              {revenueData.map((d) => (
+              {dashboardData.yearlyChartData.map((d) => (
                 <div key={d.month} className="bar-item">
-                  <div className="bar-value">{(d.value / 1000000).toFixed(0)}tr</div>
+                  <div className="bar-value">
+                    {d.value > 0 ? (d.value >= 1000000 ? (d.value / 1000000).toFixed(1) + 'tr' : (d.value / 1000).toFixed(0) + 'k') : ''}
+                  </div>
                   <div
                     className="bar"
                     style={{ height: `${(d.value / maxRevenue) * 160}px` }}
+                    title={`Doanh thu ${d.month}: ${d.value.toLocaleString('vi-VN')}₫`}
                   />
                   <div className="bar-label">{d.month}</div>
                 </div>
@@ -191,17 +270,15 @@ const DashboardPage = () => {
           </Card>
         </Col>
 
-
         <Col xs={24} lg={8}>
           <Card title="Tóm tắt hôm nay" bordered={false} className="chart-card">
             <div className="summary-list">
               {[
-                { label: 'Đơn hàng mới', value: 24, color: '#4096ff' },
-                { label: 'Đơn chờ xử lý', value: 8, color: '#fa8c16' },
-                { label: 'Đã giao thành công', value: 15, color: '#52c41a' },
-                { label: 'Đơn bị hủy', value: 1, color: '#ff4d4f' },
-                { label: 'Khách hàng mới', value: 12, color: '#722ed1' },
-                { label: 'Doanh thu hôm nay', value: '4.2tr₫', color: '#1677ff', isText: true },
+                { label: 'Đơn hàng mới', value: dashboardData.todayStats.newOrders, color: '#4096ff' },
+                { label: 'Đơn chờ xử lý', value: dashboardData.todayStats.processingOrders, color: '#fa8c16' },
+                { label: 'Đã giao thành công', value: dashboardData.todayStats.successfulOrders, color: '#52c41a' },
+                { label: 'Đơn bị hủy', value: dashboardData.todayStats.cancelledOrders, color: '#ff4d4f' },
+                { label: 'Doanh thu hôm nay', value: formatMoneyShorthand(dashboardData.todayStats.todayRevenue), color: '#1677ff', isText: true },
               ].map((item, i) => (
                 <div key={i} className="summary-item">
                   <span className="summary-dot" style={{ background: item.color }} />
@@ -216,13 +293,12 @@ const DashboardPage = () => {
         </Col>
       </Row>
 
-
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={14}>
           <Card title="Đơn hàng gần đây" bordered={false} className="table-card">
             <Table
               columns={orderColumns}
-              dataSource={recentOrders}
+              dataSource={dashboardData.recentOrders}
               pagination={false}
               size="small"
             />
@@ -232,7 +308,7 @@ const DashboardPage = () => {
           <Card title="Top sách bán chạy" bordered={false} className="table-card">
             <Table
               columns={topBookColumns}
-              dataSource={topBooks}
+              dataSource={dashboardData.topBooks.map((b, i) => ({ ...b, key: i }))}
               pagination={false}
               size="small"
             />

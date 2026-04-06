@@ -15,7 +15,7 @@ export const createVnpayPaymentUrl = async (data) => {
 export const vnpayCallback = async (params) => {
   try {
     const res = await axiosClient.get(`${BASE}/vnpay-success`, { params });
-    return res.data; // string message
+    return res.data;
   } catch (error) {
     throw handleError(error);
   }

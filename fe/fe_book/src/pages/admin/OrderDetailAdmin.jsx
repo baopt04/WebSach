@@ -260,12 +260,12 @@ const OrderDetailAdmin = () => {
       const rawPhiShip = values.phiShip ? String(values.phiShip).replace(/\D/g, '') : '0';
 
       const payload = {
-        hoTen: values.hoTenKhachHang,
-        soDienThoai: values.soDienThoai,
-        email: values.email,
+        hoTen: values.hoTenKhachHang?.trim(),
+        soDienThoai: values.soDienThoai?.trim(),
+        email: values.email?.trim(),
         diaChiGiaoHang,
         phiShip: Number(rawPhiShip),
-        ghiChu: values.ghiChu
+        ghiChu: values.ghiChu?.trim()
       };
 
       await updateHoaDon(id, payload);
@@ -545,37 +545,102 @@ const OrderDetailAdmin = () => {
       </div>
 
       <Modal title="Cập nhật trạng thái đơn hàng" open={isStatusOpen} onCancel={() => setIsStatusOpen(false)} onOk={() => statusForm.submit()}>
-        <Form form={statusForm} layout="vertical" onFinish={handleChangeStatusSubmit}>
+        <Form form={statusForm} layout="vertical" onFinish={handleChangeStatusSubmit} scrollToFirstError>
           <div style={{ marginBottom: 16 }}>
           </div>
-          <Form.Item name="ghiChu" label="Ghi chú " rules={[{ required: true, message: 'Vui lòng nhập ghi chú' }]}>
+          <Form.Item 
+            name="ghiChu" 
+            label="Ghi chú " 
+            rules={[
+              { required: true, message: 'Vui lòng nhập ghi chú' },
+              { whitespace: true, message: 'Ghi chú không được chỉ chứa khoảng trắng' },
+              { max: 255, message: 'Ghi chú không được vượt quá 255 ký tự' }
+            ]}
+          >
             <Input.TextArea placeholder="Nhập yêu cầu để chuyển trạng thái." rows={3} />
           </Form.Item>
         </Form>
       </Modal>
 
       <Modal title="Xác nhận hủy đơn hàng" open={isCancelOpen} onCancel={() => setIsCancelOpen(false)} onOk={() => cancelForm.submit()} okButtonProps={{ danger: true }}>
-        <Form form={cancelForm} layout="vertical" onFinish={handleCancelSubmit}>
+        <Form form={cancelForm} layout="vertical" onFinish={handleCancelSubmit} scrollToFirstError>
           <Text style={{ display: 'block', marginBottom: 16 }}>Hành động này không thể hoàn tác. Bạn có chắc chắn muốn hủy đơn hàng này?</Text>
-          <Form.Item name="ghiChu" label="Lý do hủy đơn" rules={[{ required: true, message: 'Vui lòng nhập lý do hủy' }]}>
+          <Form.Item 
+            name="ghiChu" 
+            label="Lý do hủy đơn" 
+            rules={[
+              { required: true, message: 'Vui lòng nhập lý do hủy' },
+              { whitespace: true, message: 'Lý do không được chỉ chứa khoảng trắng' },
+              { min: 5, message: 'Lý do hủy phải có ít nhất 5 ký tự' },
+              { max: 255, message: 'Lý do hủy không được vượt quá 255 ký tự' }
+            ]}
+          >
             <Input.TextArea placeholder="Ví dụ: Khách gọi điện bảo hủy..." rows={3} />
           </Form.Item>
         </Form>
       </Modal>
 
       <Modal title="Cập nhật thông tin giao hàng" open={isEditOpen} onCancel={() => setIsEditOpen(false)} onOk={() => editForm.submit()} width={600}>
-        <Form form={editForm} layout="vertical" onFinish={handleEditSubmit}>
+        <Form form={editForm} layout="vertical" onFinish={handleEditSubmit} scrollToFirstError>
           <Row gutter={16}>
-            <Col span={12}><Form.Item name="hoTenKhachHang" label="Họ tên"><Input /></Form.Item></Col>
-            <Col span={12}><Form.Item name="soDienThoai" label="Số điện thoại"><Input /></Form.Item></Col>
+            <Col span={12}>
+              <Form.Item 
+                name="hoTenKhachHang" 
+                label="Họ tên"
+                rules={[
+                  { required: true, message: 'Vui lòng nhập họ tên' },
+                  { whitespace: true, message: 'Họ tên không được chỉ chứa khoảng trắng' },
+                  { max: 100, message: 'Họ tên không được vượt quá 100 ký tự' }
+                ]}
+              >
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item 
+                name="soDienThoai" 
+                label="Số điện thoại"
+                rules={[
+                  { required: true, message: 'Vui lòng nhập số điện thoại' },
+                  { pattern: /^(0[3|5|7|8|9])+([0-9]{8})\b$/, message: 'Số điện thoại không hợp lệ (Bắt đầu bằng 03,05,07,08,09 và tổng 10 số)' }
+                ]}
+              >
+                <Input />
+              </Form.Item>
+            </Col>
           </Row>
           <Row gutter={16}>
-            <Col span={24}><Form.Item name="email" label="Email"><Input /></Form.Item></Col>
+            <Col span={24}>
+              <Form.Item 
+                name="email" 
+                label="Email"
+                rules={[
+                  { type: 'email', message: 'Email không đúng định dạng' },
+                  { max: 255, message: 'Email không được vượt quá 255 ký tự' }
+                ]}
+              >
+                <Input />
+              </Form.Item>
+            </Col>
           </Row>
 
           <Row gutter={16}>
             <Col span={8}>
-              <Form.Item name="tinh" label="Tỉnh / Thành phố">
+              <Form.Item 
+                name="tinh" 
+                label="Tỉnh / Thành phố"
+                dependencies={['quan', 'xa']}
+                rules={[
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      const q = getFieldValue('quan');
+                      const x = getFieldValue('xa');
+                      if ((q || x) && !value) return Promise.reject(new Error('Vui lòng chọn Tỉnh'));
+                      return Promise.resolve();
+                    }
+                  })
+                ]}
+              >
                 <Select placeholder="Chọn tỉnh" onChange={handleProvinceChange}>
                   {provinces.map(p => <Option key={p.ProvinceID} value={p.ProvinceID}>{p.ProvinceName}</Option>)}
                 </Select>
@@ -583,7 +648,21 @@ const OrderDetailAdmin = () => {
               <Form.Item name="provinceName" hidden><Input /></Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="quan" label="Quận / Huyện">
+              <Form.Item 
+                name="quan" 
+                label="Quận / Huyện"
+                dependencies={['tinh', 'xa']}
+                rules={[
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      const t = getFieldValue('tinh');
+                      const x = getFieldValue('xa');
+                      if ((t || x) && !value) return Promise.reject(new Error('Vui lòng chọn Quận/Huyện'));
+                      return Promise.resolve();
+                    }
+                  })
+                ]}
+              >
                 <Select placeholder="Chọn quận" disabled={!districts.length} onChange={handleDistrictChange}>
                   {districts.map(d => <Option key={d.DistrictID} value={d.DistrictID}>{d.DistrictName}</Option>)}
                 </Select>
@@ -591,7 +670,21 @@ const OrderDetailAdmin = () => {
               <Form.Item name="districtName" hidden><Input /></Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="xa" label="Phường / Xã">
+              <Form.Item 
+                name="xa" 
+                label="Phường / Xã"
+                dependencies={['tinh', 'quan']}
+                rules={[
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      const t = getFieldValue('tinh');
+                      const q = getFieldValue('quan');
+                      if ((t || q) && !value) return Promise.reject(new Error('Vui lòng chọn Phường/Xã'));
+                      return Promise.resolve();
+                    }
+                  })
+                ]}
+              >
                 <Select placeholder="Chọn xã" disabled={!wards.length} onChange={handleWardChange}>
                   {wards.map(w => <Option key={w.WardCode} value={w.WardCode}>{w.WardName}</Option>)}
                 </Select>
@@ -599,7 +692,14 @@ const OrderDetailAdmin = () => {
               <Form.Item name="wardName" hidden><Input /></Form.Item>
             </Col>
           </Row>
-          <Form.Item name="diaChiChiTiet" label="Địa chỉ chi tiết">
+          <Form.Item 
+            name="diaChiChiTiet" 
+            label="Địa chỉ chi tiết"
+            rules={[
+              { whitespace: true, message: 'Địa chỉ không được chỉ chứa khoảng trắng' },
+              { max: 255, message: 'Địa chỉ không được vượt quá 255 ký tự' }
+            ]}
+          >
             <Input placeholder="Số nhà, đường... " />
           </Form.Item>
           <Row gutter={16}>
@@ -607,7 +707,18 @@ const OrderDetailAdmin = () => {
             <Col span={12}><Form.Item name="ngayNhan" label="Ngày nhận hàng"><Input disabled /></Form.Item></Col>
           </Row>
           <Row gutter={16}>
-            <Col span={24}><Form.Item name="ghiChu" label="Ghi chú"><Input /></Form.Item></Col>
+            <Col span={24}>
+              <Form.Item 
+                name="ghiChu" 
+                label="Ghi chú"
+                rules={[
+                  { whitespace: true, message: 'Ghi chú không được chỉ chứa khoảng trắng' },
+                  { max: 255, message: 'Ghi chú không được vượt quá 255 ký tự' }
+                ]}
+              >
+                <Input />
+              </Form.Item>
+            </Col>
           </Row>
         </Form>
       </Modal>

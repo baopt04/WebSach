@@ -133,12 +133,30 @@ const CouponsPage = () => {
 
   const validateDateRange = (_, range) => {
     if (!range || range.length !== 2 || !range[0] || !range[1]) {
-      return Promise.reject(new Error('Vui lòng chọn thời gian'));
+      return Promise.reject(new Error('Vui lòng chọn thời gian hiệu lực'));
     }
     const start = dayjs(range[0]);
     const end = dayjs(range[1]);
-    if (!start.isValid() || !end.isValid()) return Promise.reject(new Error('Thời gian không hợp lệ'));
-    if (end.isBefore(start)) return Promise.reject(new Error('Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu'));
+    const now = dayjs();
+
+    if (!start.isValid() || !end.isValid()) {
+      return Promise.reject(new Error('Thời gian không hợp lệ'));
+    }
+
+    if (end.isBefore(start) || end.isSame(start)) {
+      return Promise.reject(new Error('Ngày kết thúc phải sau ngày bắt đầu'));
+    }
+
+    // Chỉ kiểm tra thời gian tương lai khi thêm mới
+    if (!editingItem) {
+      if (start.isBefore(now.subtract(1, 'minute'))) {
+        return Promise.reject(new Error('Ngày bắt đầu không được ở trong quá khứ'));
+      }
+      if (end.isBefore(now)) {
+        return Promise.reject(new Error('Ngày kết thúc phải ở trong tương lai'));
+      }
+    }
+
     return Promise.resolve();
   };
 
@@ -285,50 +303,38 @@ const CouponsPage = () => {
               { max: 100, message: 'Tên mã giảm giá tối đa 100 ký tự' },
             ]}
           >
-            <Input placeholder="" />
+            <Input placeholder="Ví dụ: Giảm giá mùa hè 2024" />
           </Form.Item>
           <Form.Item
             name="value"
-            label="Giá trị giảm"
+            label="Giá trị giảm (₫)"
             rules={[
               { required: true, message: "Vui lòng nhập giá trị giảm" },
-              {
-                validator: (_, val) => {
-                  if (val === undefined || val === null) return Promise.resolve();
-                  if (val <= 0) return Promise.reject(new Error("Giá trị phải lớn hơn 0"));
-                  if (!Number.isFinite(val)) return Promise.reject(new Error("Giá trị không hợp lệ"));
-                  return Promise.resolve();
-                }
-              }
+              { type: 'number', min: 1000, message: 'Giá trị giảm tối thiểu là 1,000₫' },
+              { type: 'number', max: 50000000, message: 'Giá trị giảm không được quá 50,000,000₫' }
             ]}
           >
             <InputNumber
               style={{ width: '100%' }}
               min={0}
-              placeholder="Nhập giá trị"
+              placeholder="Nhập số tiền giảm"
               formatter={value => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
               parser={value => value ? value.replace(/,/g, '') : ''}
             />
           </Form.Item>
           <Form.Item
             name="minOrder"
-            label="Đơn tối thiểu"
+            label="Đơn tối thiểu (₫)"
+            dependencies={['value']}
             rules={[
-              { required: true, message: "Vui lòng nhập giá trị áp dụng" },
-              {
-                validator: (_, val) => {
-                  if (val === undefined || val === null) return Promise.resolve();
-                  if (val <= 0) return Promise.reject(new Error("Giá trị phải lớn hơn 0"));
-                  if (!Number.isFinite(val)) return Promise.reject(new Error("Giá trị không hợp lệ"));
-                  return Promise.resolve();
-                }
-              },
+              { required: true, message: "Vui lòng nhập đơn tối thiểu áp dụng" },
               ({ getFieldValue }) => ({
                 validator: (_, val) => {
-                  const v = getFieldValue('value');
-                  if (val === undefined || val === null || v === undefined || v === null) return Promise.resolve();
-                  if (!Number.isFinite(val) || !Number.isFinite(v)) return Promise.resolve();
-                  if (Number(v) >= Number(val)) return Promise.reject(new Error('Đơn tối thiểu phải lớn hơn giá trị giảm'));
+                  const giftValue = getFieldValue('value');
+                  if (!val || !giftValue) return Promise.resolve();
+                  if (val <= giftValue) {
+                    return Promise.reject(new Error('Đơn tối thiểu phải lớn hơn giá trị giảm'));
+                  }
                   return Promise.resolve();
                 }
               })
@@ -337,46 +343,43 @@ const CouponsPage = () => {
             <InputNumber
               style={{ width: '100%' }}
               min={0}
-              placeholder="Nhập giá trị"
+              placeholder="Nhập giá trị đơn hàng tối thiểu"
               formatter={value => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
               parser={value => value ? value.replace(/,/g, '') : ''}
             />
           </Form.Item>
           <Form.Item
             name="maxUsage"
-            label="Số lượng"
+            label="Số lượng phát hành"
             rules={[
               { required: true, message: "Vui lòng nhập số lượng" },
-              {
-                validator: (_, val) => {
-                  if (val === undefined || val === null) return Promise.resolve();
-                  if (!Number.isFinite(val)) return Promise.reject(new Error("Giá trị không hợp lệ"));
-                  if (!Number.isInteger(val)) return Promise.reject(new Error("Số lượng phải là số nguyên"));
-                  if (val <= 0) return Promise.reject(new Error("Số lượng phải lớn hơn 0"));
-                  return Promise.resolve();
-                }
-              }
+              { type: 'integer', min: 1, message: 'Số lượng phải là số nguyên dương' },
+              { type: 'number', max: 1000000, message: 'Số lượng không được quá 1,000,000' }
             ]}
           >
             <InputNumber
               style={{ width: '100%' }}
-              min={0}
-              placeholder="Nhập giá trị"
-              formatter={value => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
-              parser={value => value ? value.replace(/,/g, '') : ''}
+              min={1}
+              placeholder="Nhập số lượng voucher"
             />
           </Form.Item>
           <Form.Item
             name="dateRange"
             label="Thời gian hiệu lực"
-            rules={[{ validator: validateDateRange }]}
+            rules={[{ required: true, message: 'Vui lòng chọn thời gian' }, { validator: validateDateRange }]}
           >
             <RangePicker
               style={{ width: '100%' }}
               format="DD/MM/YYYY HH:mm"
               showTime={{ format: "HH:mm" }}
+              placeholder={['Ngày bắt đầu', 'Ngày kết thúc']}
             />
           </Form.Item>
+          {editingItem && (
+            <Form.Item name="status" label="Trạng thái hoạt động" valuePropName="checked">
+              <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
+            </Form.Item>
+          )}
 
         </Form>
       </Modal>

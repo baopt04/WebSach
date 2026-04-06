@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Card, Modal, Form, Input, Space, Button, Tooltip, message, Popconfirm } from 'antd';
-import { EditOutlined, DeleteOutlined, EyeOutlined, PlusOutlined } from '@ant-design/icons';
+import { Card, Modal, Form, Input, Space, Button, Tooltip, message, Popconfirm, Typography } from 'antd';
+import { EditOutlined, DeleteOutlined, EyeOutlined, PlusOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import DataTable from '../../components/admin/DataTable';
 import SearchBar from '../../components/admin/SearchBar';
 import PageHeader from '../../components/admin/PageHeader';
@@ -76,21 +76,31 @@ const AuthorsPage = () => {
     setDetailOpen(true);
   };
 
-  const handleSave = async (values) => {
-    try {
-      if (editingItem) {
-        await updateTacGia(editingItem.id, values);
-        message.success('Cập nhật tác giả thành công');
-      } else {
-        await createTacGia(values);
-        message.success('Thêm tác giả thành công');
+  const handleSave = (values) => {
+    Modal.confirm({
+      title: editingItem ? 'Xác nhận cập nhật tác giả?' : 'Xác nhận thêm tác giả mới?',
+      content: editingItem 
+        ? `Bạn có chắc chắn muốn cập nhật thông tin cho tác giả "${editingItem.tenTacGia}"?`
+        : 'Bạn có chắc chắn muốn thêm tác giả mới này vào hệ thống?',
+      okText: 'Xác nhận',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          if (editingItem) {
+            await updateTacGia(editingItem.id, values);
+            message.success('Cập nhật tác giả thành công');
+          } else {
+            await createTacGia(values);
+            message.success('Thêm tác giả thành công');
+          }
+          setModalOpen(false);
+          fetchAuthors();
+        } catch (error) {
+          console.error('Lỗi lưu tác giả:', error);
+          message.error('Lỗi: ' + (error.message || 'Không thể lưu thông tin'));
+        }
       }
-      setModalOpen(false);
-      fetchAuthors();
-    } catch (error) {
-      console.error('Lỗi lưu tác giả:', error);
-      message.error('Lỗi: ' + (error.message || 'Không thể lưu thông tin'));
-    }
+    });
   };
 
   const handleDelete = async (id) => {
@@ -188,21 +198,28 @@ const AuthorsPage = () => {
           form={form}
           layout="vertical"
           onFinish={handleSave}
+          validateTrigger="onChange"
         >
           <Form.Item
             name="tenTacGia"
             label="Tên tác giả"
             rules={[
               { required: true, message: 'Vui lòng nhập tên tác giả' },
-              { min: 3, message: 'Tên tác giả phải có ít nhất 3 ký tự' }
+              { whitespace: true, message: 'Tên tác giả không được chỉ chứa khoảng trắng' },
+              { min: 3, message: 'Tên tác giả phải có ít nhất 3 ký tự' },
+              { max: 100, message: 'Tên tác giả tối đa 100 ký tự' }
             ]}
           >
-            <Input placeholder="Nhập tên tác giả" />
+            <Input placeholder="Ví dụ: Nam Cao, Ngô Tất Tố..." />
           </Form.Item>
           <Form.Item
             name="tieuSu"
             label="Tiểu sử"
-            rules={[{ required: true, message: 'Vui lòng nhập tiểu sử' }]}
+            rules={[
+              { required: true, message: 'Vui lòng nhập tiểu sử' },
+              { whitespace: true, message: 'Tiểu sử không được chỉ chứa khoảng trắng' },
+              { min: 10, message: 'Tiểu sử nên mô tả chi tiết hơn (tối thiểu 10 ký tự)' }
+            ]}
           >
             <TextArea rows={4} placeholder="Mô tả tiểu sử về tác giả..." />
           </Form.Item>

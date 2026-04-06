@@ -43,6 +43,17 @@ export const updateVoucher = async (id, data) => {
     }
 };
 
+export const getValidVouchers = async (totalAmount) => {
+    try {
+        const res = await axiosClient.get("/api/customer/v1/ma-giam-gia/hop-le", {
+            params: { tongTien: totalAmount }
+        });
+        return res.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
 export const searchVoucher = async (keyword) => {
     try {
         const res = await axiosClient.get(`${BASE}/search`, {

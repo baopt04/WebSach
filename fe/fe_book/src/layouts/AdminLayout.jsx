@@ -23,12 +23,12 @@ const { Sider, Header, Content } = Layout;
 const { Text } = Typography;
 
 const menuItems = [
-  { key: '/admin/statistics', icon: <BarChartOutlined />, label: 'Thống kê' },
+  { key: '/admin/dashboard', icon: <BarChartOutlined />, label: 'Thống kê' },
   { key: '/admin/pos', icon: <ShoppingCartOutlined />, label: 'Bán hàng tại quầy' },
   { key: '/admin/orders', icon: <FileTextOutlined />, label: 'Quản lý hóa đơn' },
-  { 
-    key: 'group-products', 
-    icon: <AppstoreOutlined />, 
+  {
+    key: 'group-products',
+    icon: <AppstoreOutlined />,
     label: 'Quản lý sản phẩm',
     children: [
       { key: '/admin/products', icon: <BookOutlined />, label: 'Sản phẩm' },
@@ -59,8 +59,7 @@ const AdminLayout = () => {
   const location = useLocation();
 
   const currentPath = location.pathname;
-  
-  // Hàm tìm key active kể cả trong sub-menu
+
   const findActiveKey = (items, path) => {
     for (const item of items) {
       if (item.children) {
@@ -77,7 +76,6 @@ const AdminLayout = () => {
   const activeMenuKey = findActiveKey(menuItems, currentPath) || currentPath;
   const pageTitle = pageTitles[activeMenuKey] || 'Admin dashboard';
 
-  // Quản lý việc mở auto-expand sub-menu
   const [openKeys, setOpenKeys] = useState(['group-products']);
 
   const handleMenuClick = ({ key }) => {

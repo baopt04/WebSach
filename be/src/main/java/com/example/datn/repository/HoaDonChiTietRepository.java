@@ -7,9 +7,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface HoaDonChiTietRepository extends JpaRepository<HoaDonChiTiet, Integer> {
     List<HoaDonChiTiet> findByHoaDonId(Integer idHoaDon);
+
+    Optional<HoaDonChiTiet> findByHoaDon_IdAndSach_Id(Integer idHoaDon, Integer idSach);
 
     @Query("SELECT c FROM HoaDonChiTiet c LEFT JOIN FETCH c.sach WHERE c.hoaDon.id = :hoaDonId")
     List<HoaDonChiTiet> findByHoaDonIdFetchSach(@Param("hoaDonId") Integer hoaDonId);

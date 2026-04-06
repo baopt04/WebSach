@@ -4,11 +4,14 @@ import com.example.datn.entity.MaGiamGia;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 
 public interface MaGiamGiaRepository extends JpaRepository<MaGiamGia, Integer> {
+
+    Optional<MaGiamGia> findFirstByMaVoucherIgnoreCase(String maVoucher);
     
     @Query("SELECT m FROM MaGiamGia m WHERE LOWER(m.maVoucher) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(m.tenMaGiamGia) LIKE LOWER(CONCAT('%', :keyword, '%')) ORDER BY m.ngayCapNhat DESC")
     List<MaGiamGia> searchByKeyword(@Param("keyword") String keyword);

@@ -103,24 +103,32 @@ const ProfilePage = () => {
   const validateProfile = () => {
     const errors = {};
 
-    if (!profileForm.hoTen || profileForm.hoTen.trim().length < 5) {
-      errors.hoTen = 'Họ tên phải có ít nhất 5 ký tự';
+    const cleanHoTen = profileForm.hoTen ? profileForm.hoTen.trim() : '';
+    if (!cleanHoTen) {
+      errors.hoTen = 'Vui lòng nhập họ tên';
+    } else if (cleanHoTen.length < 5 || cleanHoTen.length > 50) {
+      errors.hoTen = 'Họ tên phải từ 5 đến 50 ký tự';
     }
-    const phoneRegex = /^(0[3|5|7|8|9])+([0-9]{8})$/;
-    if (!profileForm.soDienThoai) {
+
+    const cleanPhone = profileForm.soDienThoai ? profileForm.soDienThoai.trim() : '';
+    const phoneRegex = /^(0|84)(3|5|7|8|9)[0-9]{8}$/;
+    if (!cleanPhone) {
       errors.soDienThoai = 'Vui lòng nhập số điện thoại';
-    } else if (!phoneRegex.test(profileForm.soDienThoai)) {
-      errors.soDienThoai = 'Số điện thoại không hợp lệ';
+    } else if (!phoneRegex.test(cleanPhone)) {
+      errors.soDienThoai = 'Số điện thoại không hợp lệ (VD: 0987123456)';
     }
-    if (!profileForm.email) {
+
+    const cleanEmail = profileForm.email ? profileForm.email.trim() : '';
+    if (!cleanEmail) {
       errors.email = 'Vui lòng nhập email';
     } else {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(profileForm.email)) {
+      if (!emailRegex.test(cleanEmail)) {
         errors.email = 'Email không hợp lệ';
+      } else if (cleanEmail.length > 255) {
+        errors.email = 'Email không được vượt quá 255 ký tự';
       }
     }
-
 
     if (profileForm.gioiTinh === undefined || profileForm.gioiTinh === null) {
       errors.gioiTinh = 'Vui lòng chọn giới tính';
@@ -133,6 +141,8 @@ const ProfilePage = () => {
       const age = today.diff(profileForm.ngaySinh, 'year');
       if (age < 18) {
         errors.ngaySinh = 'Bạn phải đủ 18 tuổi';
+      } else if (age > 100) {
+        errors.ngaySinh = 'Tuổi không hợp lệ';
       }
     }
 
@@ -148,9 +158,9 @@ const ProfilePage = () => {
     setFormErrors({});
     try {
       const payload = {
-        hoTen: profileForm.hoTen,
-        soDienThoai: profileForm.soDienThoai,
-        email: profileForm.email,
+        hoTen: profileForm.hoTen.trim(),
+        soDienThoai: profileForm.soDienThoai.trim(),
+        email: profileForm.email.trim(),
         gioiTinh: profileForm.gioiTinh,
         ngaySinh: profileForm.ngaySinh ? profileForm.ngaySinh.format('DD-MM-YYYY') : null
       };
@@ -230,20 +240,28 @@ const ProfilePage = () => {
   const validateAddress = () => {
     const newErrors = {};
 
-    if (!addressForm.hoTen || addressForm.hoTen.trim() === '') {
+    const cleanHoTen = addressForm.hoTen ? addressForm.hoTen.trim() : '';
+    if (!cleanHoTen) {
       newErrors.hoTen = 'Vui lòng nhập họ tên người nhận';
+    } else if (cleanHoTen.length > 50) {
+      newErrors.hoTen = 'Họ tên không được vượt quá 50 ký tự';
     }
 
-    const phoneRegex = /^(0[3|5|7|8|9])+([0-9]{8})$/;
-
-    if (!addressForm.soDienThoai) {
+    const cleanPhone = addressForm.soDienThoai ? addressForm.soDienThoai.trim() : '';
+    const phoneRegex = /^(0|84)(3|5|7|8|9)[0-9]{8}$/;
+    if (!cleanPhone) {
       newErrors.soDienThoai = 'Vui lòng nhập số điện thoại';
-    } else if (!phoneRegex.test(addressForm.soDienThoai)) {
-      newErrors.soDienThoai = 'Số điện thoại không hợp lệ';
+    } else if (!phoneRegex.test(cleanPhone)) {
+      newErrors.soDienThoai = 'Số điện thoại không hợp lệ (VD: 0987123456)';
     }
-    if (!addressForm.diaChiChiTiet || addressForm.diaChiChiTiet.trim() === '') {
+
+    const cleanDiaChi = addressForm.diaChiChiTiet ? addressForm.diaChiChiTiet.trim() : '';
+    if (!cleanDiaChi) {
       newErrors.diaChiChiTiet = 'Vui lòng nhập chi tiết địa chỉ';
+    } else if (cleanDiaChi.length > 255) {
+      newErrors.diaChiChiTiet = 'Địa chỉ không được vượt quá 255 ký tự';
     }
+
     if (!addressForm.idTinhThanh) {
       newErrors.idTinhThanh = 'Vui lòng chọn tỉnh/thành phố';
     }
@@ -287,11 +305,18 @@ const ProfilePage = () => {
 
       onOk: async () => {
         try {
+          const payload = {
+            ...addressForm,
+            hoTen: addressForm.hoTen.trim(),
+            soDienThoai: addressForm.soDienThoai.trim(),
+            diaChiChiTiet: addressForm.diaChiChiTiet.trim()
+          };
+
           if (isUpdate) {
-            await updateMyAddress(addressForm.id, addressForm);
+            await updateMyAddress(addressForm.id, payload);
             message.success("Cập nhật địa chỉ thành công!");
           } else {
-            await createMyAddress(addressForm);
+            await createMyAddress(payload);
             message.success("Thêm địa chỉ thành công!");
           }
           setIsAddressModalOpen(false);

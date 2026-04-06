@@ -106,19 +106,29 @@ const CartPage = () => {
 
   const validateGuestForm = () => {
     const errors = {};
+    const hoTen = String(guestForm.hoTen || '').trim();
     const phone = String(guestForm.soDienThoai || '').trim();
     const email = String(guestForm.email || '').trim();
+    const diaChi = String(guestForm.diaChiChiTiet || '').trim();
 
-    if (!String(guestForm.hoTen || '').trim()) errors.hoTen = 'Vui lòng nhập họ và tên';
+    if (!hoTen) errors.hoTen = 'Vui lòng nhập họ và tên';
+    else if (hoTen.length > 50) errors.hoTen = 'Họ tên không được vượt quá 50 ký tự';
+
+    const phoneRegex = /^(0|84)(3|5|7|8|9)[0-9]{8}$/;
     if (!phone) errors.soDienThoai = 'Vui lòng nhập số điện thoại';
-    else if (!/^(0|\+84)\d{9,10}$/.test(phone)) errors.soDienThoai = 'Số điện thoại không hợp lệ';
+    else if (!phoneRegex.test(phone)) errors.soDienThoai = 'Số điện thoại không hợp lệ (VD: 0987123456)';
 
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = 'Email không hợp lệ';
+    if (email) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = 'Email không hợp lệ';
+      else if (email.length > 255) errors.email = 'Email tối đa 255 ký tự';
+    }
 
     if (!guestForm.idTinhThanh) errors.idTinhThanh = 'Vui lòng chọn Tỉnh/Thành phố';
     if (!guestForm.idQuanHuyen) errors.idQuanHuyen = 'Vui lòng chọn Quận/Huyện';
     if (!guestForm.idPhuongXa) errors.idPhuongXa = 'Vui lòng chọn Phường/Xã';
-    if (!String(guestForm.diaChiChiTiet || '').trim()) errors.diaChiChiTiet = 'Vui lòng nhập địa chỉ cụ thể';
+
+    if (!diaChi) errors.diaChiChiTiet = 'Vui lòng nhập địa chỉ cụ thể';
+    else if (diaChi.length > 255) errors.diaChiChiTiet = 'Địa chỉ tối đa 255 ký tự';
 
     setGuestErrors(errors);
     return Object.keys(errors).length === 0;
@@ -193,7 +203,7 @@ const CartPage = () => {
 
   const sumAmount = selectedItems.reduce((acc, obj) => acc + (obj.giaBan * obj.soLuong), 0);
 
-  /** Làm tròn phí ship xuống bội số 1.000 gần nhất (30.023 → 30.000) */
+
   const shippingFeeRounded = useMemo(
     () => Math.floor((shippingFee || 0) / 1000) * 1000,
     [shippingFee]
@@ -278,6 +288,10 @@ const CartPage = () => {
 
   const handleUpdateQty = async (idGioHangChiTiet, val) => {
     if (val < 1) return;
+    if (val > 5) {
+      message.warning('Bạn chỉ được mua tối đa 5 sản phẩm trên mỗi đầu sách!');
+      return;
+    }
     if (!isLoggedIn) {
       const guestCart = JSON.parse(localStorage.getItem('guestCart') || '[]');
       const updated = guestCart.map(item =>
@@ -460,12 +474,15 @@ const CartPage = () => {
       align: 'center',
       width: 100,
       render: (_, record) => (
-        <InputNumber
-          min={1}
-          value={record.soLuong}
-          onChange={(val) => handleUpdateQty(record.idGioHangChiTiet, val)}
-          style={{ width: '60px' }}
-        />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
+          <InputNumber
+            min={1}
+            max={5}
+            value={record.soLuong}
+            onChange={(val) => handleUpdateQty(record.idGioHangChiTiet, val || 1)}
+            style={{ width: '60px' }}
+          />
+        </div>
       ),
     },
     {
@@ -545,13 +562,23 @@ const CartPage = () => {
 
   const validateAddress = () => {
     const newErrors = {};
-    if (!addressForm.hoTen) newErrors.hoTen = 'Nhập họ tên';
-    if (!addressForm.soDienThoai) newErrors.soDienThoai = 'Nhập số điện thoại';
-    if (addressForm.soDienThoai && !/^\d{9,11}$/.test(addressForm.soDienThoai)) newErrors.soDienThoai = 'Số điện thoại không hợp lệ';
+    const hoTen = String(addressForm.hoTen || '').trim();
+    const phone = String(addressForm.soDienThoai || '').trim();
+    const diaChi = String(addressForm.diaChiChiTiet || '').trim();
+
+    if (!hoTen) newErrors.hoTen = 'Nhập họ tên';
+    else if (hoTen.length > 50) newErrors.hoTen = 'Họ tên tối đa 50 ký tự';
+
+    const phoneRegex = /^(0|84)(3|5|7|8|9)[0-9]{8}$/;
+    if (!phone) newErrors.soDienThoai = 'Nhập số điện thoại';
+    else if (!phoneRegex.test(phone)) newErrors.soDienThoai = 'Số điện thoại không hợp lệ';
+
     if (!addressForm.idTinhThanh) newErrors.idTinhThanh = 'Chọn tỉnh/thành';
     if (!addressForm.idQuanHuyen) newErrors.idQuanHuyen = 'Chọn quận/huyện';
     if (!addressForm.idPhuongXa) newErrors.idPhuongXa = 'Chọn phường/xã';
-    if (!addressForm.diaChiChiTiet) newErrors.diaChiChiTiet = 'Nhập địa chỉ cụ thể';
+
+    if (!diaChi) newErrors.diaChiChiTiet = 'Nhập địa chỉ cụ thể';
+    else if (diaChi.length > 255) newErrors.diaChiChiTiet = 'Địa chỉ tối đa 255 ký tự';
 
     setErrorsAddress(newErrors);
     return Object.keys(newErrors).length === 0;

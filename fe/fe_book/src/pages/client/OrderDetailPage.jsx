@@ -105,14 +105,19 @@ const OrderDetailPage = () => {
     : 0;
 
   const handleCancelOrder = async () => {
-    if (!cancelNote.trim()) {
+    const cleanNote = cancelNote.trim();
+    if (!cleanNote) {
       message.warning("Vui lòng nhập lý do hủy đơn.");
+      return;
+    }
+    if (cleanNote.length > 255) {
+      message.warning("Lý do hủy đơn không được vượt quá 255 ký tự.");
       return;
     }
     try {
       setCancelLoading(true);
       await cancelHoaDon(id, {
-        ghiChu: cancelNote.trim(),
+        ghiChu: cleanNote,
         orderStatus: 'DA_HUY'
       });
       message.success("Hủy đơn hàng thành công!");
@@ -219,13 +224,13 @@ const OrderDetailPage = () => {
       const diaChiGiaoHang = parts.join(', ');
 
       const payload = {
-        hoTen: values.hoTen,
-        soDienThoai: values.soDienThoai,
-        email: values.email || '',
+        hoTen: values.hoTen?.trim(),
+        soDienThoai: values.soDienThoai?.trim(),
+        email: values.email?.trim() || '',
         diaChiGiaoHang,
         phiShip: calculatedShip,
         ngayNhan: estimatedDelivery || '',
-        ghiChu: values.ghiChu || '',
+        ghiChu: values.ghiChu?.trim() || '',
       };
 
       Modal.confirm({
@@ -420,13 +425,22 @@ const OrderDetailPage = () => {
         width={560}
       >
         <Form form={updateForm} layout="vertical" style={{ marginTop: 16 }}>
-          <Form.Item name="hoTen" label="Họ và tên" rules={[{ required: true, message: 'Vui lòng nhập họ tên!' }]}>
+          <Form.Item name="hoTen" label="Họ và tên" rules={[
+            { required: true, whitespace: true, message: 'Vui lòng nhập họ tên!' },
+            { max: 50, message: 'Họ tên không được vượt quá 50 ký tự!' }
+          ]}>
             <Input placeholder="Họ và tên người nhận" />
           </Form.Item>
-          <Form.Item name="soDienThoai" label="Số điện thoại" rules={[{ required: true, message: 'Vui lòng nhập số điện thoại!' }]}>
+          <Form.Item name="soDienThoai" label="Số điện thoại" rules={[
+            { required: true, whitespace: true, message: 'Vui lòng nhập số điện thoại!' },
+            { pattern: /^(0|84)(3|5|7|8|9)[0-9]{8}$/, message: 'Số điện thoại không hợp lệ (VD: 0987123456)!' }
+          ]}>
             <Input placeholder="Số điện thoại" />
           </Form.Item>
-          <Form.Item name="email" label="Email">
+          <Form.Item name="email" label="Email" rules={[
+            { type: 'email', message: 'Email không hợp lệ!' },
+            { max: 255, message: 'Email không được vượt quá 255 ký tự!' }
+          ]}>
             <Input placeholder="Email (không bắt buộc)" />
           </Form.Item>
 
@@ -466,7 +480,10 @@ const OrderDetailPage = () => {
             </Select>
           </Form.Item>
 
-          <Form.Item name="diaChiChiTiet" label="Địa chỉ chi tiết (số nhà, tên đường...)" rules={[{ required: true, message: 'Vui lòng nhập địa chỉ!' }]}>
+          <Form.Item name="diaChiChiTiet" label="Địa chỉ chi tiết (số nhà, tên đường...)" rules={[
+            { required: true, whitespace: true, message: 'Vui lòng nhập địa chỉ!' },
+            { max: 255, message: 'Địa chỉ không được vượt quá 255 ký tự!' }
+          ]}>
             <Input placeholder="VD: 123 Nguyễn Văn A" />
           </Form.Item>
 

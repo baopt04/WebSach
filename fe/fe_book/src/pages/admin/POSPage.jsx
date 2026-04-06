@@ -9,49 +9,93 @@ import {
     CarOutlined, CheckCircleOutlined, CloseOutlined
 } from '@ant-design/icons';
 import PageHeader from '../../components/admin/PageHeader';
-import { getProvinces, getDistricts, getWards } from '../../services/GhnApi';
+import { getProvinces, getDistricts, getWards, calculateShippingFee, calculateLeadTime } from '../../services/GhnApi';
 
-// New Sub-components
-// import ProductSelectModal from '../../components/admin/pos/ProductSelectModal';
+import ProductSelectModal from '../../components/admin/pos/ProductSelectModal';
 import CustomerSelectModal from '../../components/admin/pos/CustomerSelectModal';
 import VoucherSelectModal from '../../components/admin/pos/VoucherSelectModal';
+import QRScannerModal from '../../components/admin/pos/QRScannerModal';
 
 import './AdminPage.css';
 import './POSPage.css';
+import { getSachByMaVach as getSachByMaVachService } from '../../services/SachService';
+import {
+    getAllHoaDon,
+    createHoaDon,
+    addSachToHoaDon,
+    deleteChiTietHoaDon,
+    giamSoLuongChiTiet,
+    thanhToanHoaDon
+} from '../../services/PosSerivce';
+import { Modal } from 'antd';
 
 const { Text, Title } = Typography;
 const { Option } = Select;
 
 const INITIAL_BILL = (id, index) => ({
     id: `bill-${id}`,
-    label: `Hóa đơn ${index}`,
+    label: index > 0 ? `Hóa đơn ${index}` : "Hóa đơn mới",
     cartItems: [],
-    customer: { hoten: 'Khách lẻ', id: null },
+    customer: { hoTen: 'Khách lẻ', id: null },
     voucher: null,
+    phuongThucThanhToan: 'TIEN_MAT',
+    ghiChu: '',
     isDelivery: false,
     shippingInfo: {
         fullname: '', email: '', phone: '',
-        province: null, district: null, ward: null,
-        addressDetail: ''
+        province: null, provinceName: '',
+        district: null, districtName: '',
+        ward: null, wardName: '',
+        addressDetail: '',
+        shippingFee: 0,
+        leadTime: null
     }
 });
 
 const POSPage = () => {
-    const [bills, setBills] = useState([INITIAL_BILL(Date.now(), 1)]);
-    const [activeTabKey, setActiveTabKey] = useState(bills[0].id);
-    const [idCounter, setIdCounter] = useState(2);
+    const [bills, setBills] = useState([]);
+    const [activeTabKey, setActiveTabKey] = useState(null);
+    const [loading, setLoading] = useState(false);
 
-    // Modal States
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
     const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
     const [isVoucherModalOpen, setIsVoucherModalOpen] = useState(false);
+    const [isQRScannerModalOpen, setIsQRScannerModalOpen] = useState(false);
 
-    // Delivery API Data
     const [provinces, setProvinces] = useState([]);
     const [districts, setDistricts] = useState([]);
     const [wards, setWards] = useState([]);
 
+    const fetchInvoices = async (selectNewest = false) => {
+        setLoading(true);
+        try {
+            const data = await getAllHoaDon();
+            const formattedBills = data.map(item => ({
+                ...INITIAL_BILL(item.id, 0),
+                id: item.id.toString(),
+                label: item.maHoaDon,
+                cartItems: item.chiTiets || [], // Đồng bộ danh sách sản phẩm từ backend
+                apiData: item
+            }));
+            setBills(formattedBills);
+
+            if (formattedBills.length > 0) {
+                if (selectNewest) {
+                    setActiveTabKey(formattedBills[0].id);
+                } else if (!activeTabKey || !formattedBills.find(b => b.id === activeTabKey)) {
+                    setActiveTabKey(formattedBills[0].id);
+                }
+            }
+        } catch (error) {
+            message.error("Lỗi tải danh sách hóa đơn");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
+        fetchInvoices();
+
         const fetchProvinces = async () => {
             try {
                 const data = await getProvinces();
@@ -66,18 +110,22 @@ const POSPage = () => {
     const activeBill = bills.find(b => b.id === activeTabKey) || bills[0];
 
     const updateActiveBill = (updates) => {
+        if (!activeTabKey) return;
         setBills(prev => prev.map(b => b.id === activeTabKey ? { ...b, ...updates } : b));
     };
 
-    const addBill = () => {
+    const addBill = async () => {
         if (bills.length >= 10) {
-            message.warning("Chỉ được tạo tối đa 10 hóa đơn");
+            message.warning("Không thể tạo quá 10 hóa đơn");
             return;
         }
-        const newBill = INITIAL_BILL(Date.now(), idCounter);
-        setBills([...bills, newBill]);
-        setActiveTabKey(newBill.id);
-        setIdCounter(idCounter + 1);
+        try {
+            await createHoaDon();
+            message.success("Tạo hóa đơn mới thành công");
+            await fetchInvoices(true);
+        } catch (error) {
+            message.error("Không thể tạo thêm hóa đơn");
+        }
     };
 
     const removeBill = (targetKey) => {
@@ -90,31 +138,147 @@ const POSPage = () => {
     };
 
     const addToCart = (product) => {
-        const currentCart = [...activeBill.cartItems];
-        const existing = currentCart.find(item => item.id === product.id);
-        if (existing) {
-            existing.qty += 1;
-        } else {
-            currentCart.push({ ...product, qty: 1 });
-        }
-        updateActiveBill({ cartItems: currentCart });
-        setIsProductModalOpen(false);
-        message.success(`Đã thêm ${product.tensach} vào giỏ`);
-    };
+        if (!activeBill) return;
 
-    const removeProduct = (id) => {
-        updateActiveBill({ cartItems: activeBill.cartItems.filter(item => item.id !== id) });
-    };
-
-    const updateProductQty = (id, qty) => {
-        if (qty < 1) return;
-        updateActiveBill({
-            cartItems: activeBill.cartItems.map(item => item.id === id ? { ...item, qty } : item)
+        let quantity = 1;
+        Modal.confirm({
+            title: `Chọn số lượng cho "${product.tenSach || product.tensach}"`,
+            content: (
+                <div style={{ marginTop: 16 }}>
+                    <Text>Số lượng tồn: <b>{product.soLuong}</b></Text>
+                    <div style={{ marginTop: 8 }}>
+                        <InputNumber
+                            min={1}
+                            max={product.soLuong}
+                            defaultValue={1}
+                            style={{ width: '100%' }}
+                            onChange={(val) => quantity = val}
+                        />
+                    </div>
+                    {product.soLuong <= 0 && <Text type="danger">Sản phẩm đã hết hàng!</Text>}
+                </div>
+            ),
+            okText: 'Xác nhận',
+            cancelText: 'Hủy',
+            onOk: async () => {
+                if (!quantity || quantity < 1) {
+                    message.error("Số lượng phải lớn hơn 0");
+                    return Promise.reject();
+                }
+                if (quantity > product.soLuong) {
+                    message.error("Số lượng vượt quá tồn kho!");
+                    return Promise.reject();
+                }
+                try {
+                    setLoading(true);
+                    await addSachToHoaDon(activeBill.id, {
+                        idSach: product.id,
+                        soLuong: quantity
+                    });
+                    message.success("Đã thêm sản phẩm vào hóa đơn");
+                    await fetchInvoices();
+                } catch (error) {
+                    message.error("Không thể thêm sản phẩm");
+                } finally {
+                    setLoading(false);
+                }
+            }
         });
     };
 
+    const handleScanQRCode = () => {
+        if (!activeBill) return;
+        setIsQRScannerModalOpen(true);
+    };
+
+    const handleScanSuccess = async (code) => {
+        setIsQRScannerModalOpen(false);
+        try {
+            setLoading(true);
+            const product = await getSachByMaVachService(code);
+            if (product) {
+                await addSachToHoaDon(activeBill.id, {
+                    idSach: product.id,
+                    soLuong: 1
+                });
+                message.success(`Đã thêm "${product.tenSach}" vào hóa đơn`);
+                await fetchInvoices();
+            } else {
+                message.error("Không tìm thấy sản phẩm có mã: " + code);
+            }
+        } catch (error) {
+            message.error("Lỗi khi quét hoặc thêm sản phẩm");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const removeProduct = (record) => {
+        if (!activeBill) return;
+        Modal.confirm({
+            title: 'Xác nhận xóa',
+            content: `Bạn có chắc muốn xóa "${record.tenSach}" khỏi hóa đơn?`,
+            okText: 'Xóa',
+            okType: 'danger',
+            cancelText: 'Hủy',
+            onOk: async () => {
+                try {
+                    setLoading(true);
+                    await deleteChiTietHoaDon(activeBill.id, record.id);
+                    message.success("Đã xóa sản phẩm");
+                    await fetchInvoices();
+                } catch (error) {
+                    message.error("Lỗi khi xóa sản phẩm");
+                } finally {
+                    setLoading(false);
+                }
+            }
+        });
+    };
+
+    const updateProductQty = async (record, val) => {
+        if (!activeBill || val == null) return;
+        const qty = Number(val);
+        if (!Number.isFinite(qty) || qty < 1 || qty === record.soLuong) return;
+
+        try {
+            setLoading(true);
+            if (qty > record.soLuong) {
+                const delta = qty - record.soLuong;
+                await addSachToHoaDon(activeBill.id, {
+                    idSach: record.idSach,
+                    soLuong: delta
+                });
+            } else {
+                const soLuongGiam = record.soLuong - qty;
+                await giamSoLuongChiTiet(activeBill.id, record.id, soLuongGiam);
+            }
+            await fetchInvoices();
+        } catch (error) {
+            message.error(
+                qty > record.soLuong
+                    ? "Lỗi tăng số lượng. Có thể do vượt quá tồn kho."
+                    : "Lỗi giảm số lượng."
+            );
+            await fetchInvoices();
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleProvinceChange = async (val) => {
-        updateActiveBill({ shippingInfo: { ...activeBill.shippingInfo, province: val, district: null, ward: null } });
+        const province = provinces.find(p => p.ProvinceID === val);
+        updateActiveBill({
+            shippingInfo: {
+                ...activeBill.shippingInfo,
+                province: val,
+                provinceName: province?.ProvinceName || '',
+                district: null,
+                districtName: '',
+                ward: null,
+                wardName: ''
+            }
+        });
         try {
             const data = await getDistricts(val);
             setDistricts(data.data || []);
@@ -125,7 +289,18 @@ const POSPage = () => {
     };
 
     const handleDistrictChange = async (val) => {
-        updateActiveBill({ shippingInfo: { ...activeBill.shippingInfo, district: val, ward: null } });
+        const district = districts.find(d => d.DistrictID === val);
+        updateActiveBill({
+            shippingInfo: {
+                ...activeBill.shippingInfo,
+                district: val,
+                districtName: district?.DistrictName || '',
+                ward: null,
+                wardName: '',
+                shippingFee: 0,
+                leadTime: null
+            }
+        });
         try {
             const data = await getWards(val);
             setWards(data.data || []);
@@ -134,48 +309,179 @@ const POSPage = () => {
         }
     };
 
+    const handleWardChange = async (val) => {
+        const ward = wards.find(w => w.WardCode === val);
+        updateActiveBill({
+            shippingInfo: {
+                ...activeBill.shippingInfo,
+                ward: val,
+                wardName: ward?.WardName || ''
+            }
+        });
+
+        try {
+            const [feeRes, leadTimeRes] = await Promise.all([
+                calculateShippingFee({
+                    toDistrictId: activeBill.shippingInfo.district,
+                    toWardCode: val
+                }),
+                calculateLeadTime({
+                    toDistrictId: activeBill.shippingInfo.district,
+                    toWardCode: val
+                })
+            ]);
+
+            updateActiveBill({
+                shippingInfo: {
+                    ...activeBill.shippingInfo,
+                    ward: val,
+                    wardName: ward?.WardName || '',
+                    shippingFee: feeRes.data.total,
+                    leadTime: leadTimeRes.data.leadtime
+                }
+            });
+            message.success("Đã cập nhật phí vận chuyển và ngày giao dự kiến");
+        } catch (error) {
+            console.error("Lỗi GHN:", error);
+            message.error("Không thể tính phí vận chuyển");
+        }
+    };
+
     const cartColumns = [
         { title: 'STT', key: 'stt', render: (t, r, idx) => idx + 1, width: 50 },
-        { title: 'Ảnh', dataIndex: 'hinhanh', key: 'hinhanh', render: (url) => <img src={url} alt="book" style={{ width: 40, height: 50, objectFit: 'cover' }} />, width: 80 },
-        { title: 'Tên sản phẩm', dataIndex: 'tensach', key: 'tensach' },
+        {
+            title: 'Ảnh',
+            dataIndex: 'hinhAnh',
+            key: 'hinhAnh',
+            render: (url) => <img src={url} alt="book" style={{ width: 40, height: 50, objectFit: 'cover' }} />,
+            width: 80
+        },
+        { title: 'Tên sản phẩm', dataIndex: 'tenSach', key: 'tenSach' },
         {
             title: 'Số lượng',
-            dataIndex: 'qty',
-            key: 'qty',
-            render: (qty, record) => (
-                <InputNumber min={1} value={qty} onChange={(val) => updateProductQty(record.id, val)} />
+            dataIndex: 'soLuong',
+            key: 'soLuong',
+            render: (soLuong, record) => (
+                <InputNumber min={1} value={soLuong} onChange={(val) => updateProductQty(record, val)} />
             ),
             width: 100
         },
         {
             title: 'Tổng tiền',
             key: 'total',
-            render: (_, record) => `${(record.gia * record.qty).toLocaleString('vi-VN')}₫`,
+            render: (_, record) => `${(record.donGia * record.soLuong).toLocaleString('vi-VN')}₫`,
             width: 120
         },
         {
             title: 'Thao tác',
             key: 'action',
             render: (_, record) => (
-                <Popconfirm title="Xóa sản phẩm này?" onConfirm={() => removeProduct(record.id)}>
-                    <Button danger type="text" icon={<DeleteOutlined />} />
-                </Popconfirm>
+                <Button
+                    danger
+                    type="text"
+                    icon={<DeleteOutlined />}
+                    onClick={() => removeProduct(record)}
+                />
             ),
             width: 80
         },
     ];
 
-    const subtotal = activeBill.cartItems.reduce((sum, item) => sum + item.gia * item.qty, 0);
-    const discount = activeBill.voucher ? activeBill.voucher.giatrigiam : 0;
-    const finalTotal = Math.max(0, subtotal - discount);
+    const subtotal = activeBill?.cartItems?.reduce((sum, item) => sum + item.donGia * item.soLuong, 0) || 0;
+    const discount = activeBill?.voucher ? activeBill.voucher.giaTriGiam : 0;
+    const shippingFee = activeBill?.isDelivery ? (activeBill.shippingInfo.shippingFee || 0) : 0;
+    const finalTotal = Math.max(0, subtotal + shippingFee - discount);
 
-    const handleConfirmPayment = () => {
-        if (activeBill.cartItems.length === 0) {
+    const resetCustomer = () => {
+        if (!activeBill) return;
+        updateActiveBill({
+            customer: { hoTen: 'Khách lẻ', id: null },
+            shippingInfo: {
+                ...activeBill.shippingInfo,
+                fullname: '',
+                phone: '',
+                email: ''
+            }
+        });
+        message.info("Đã quay về khách lẻ");
+    };
+
+    const handleConfirmPayment = async () => {
+        if (!activeBill || activeBill.cartItems.length === 0) {
             message.error("Giỏ hàng trống!");
             return;
         }
-        message.success("Thanh toán thành công cho " + activeBill.label);
-        removeBill(activeBill.id);
+
+        const { shippingInfo, customer, voucher, phuongThucThanhToan, ghiChu, isDelivery } = activeBill;
+
+        if (ghiChu && ghiChu.length > 255) {
+            message.error("Ghi chú không được vượt quá 255 ký tự");
+            return;
+        }
+
+        if (isDelivery) {
+            if (!shippingInfo.fullname || !shippingInfo.fullname.trim()) {
+                message.error("Vui lòng nhập họ tên người nhận");
+                return;
+            }
+            if (!shippingInfo.phone || !shippingInfo.phone.trim()) {
+                message.error("Vui lòng nhập số điện thoại");
+                return;
+            }
+            const phoneRegex = /^(0[3|5|7|8|9])+([0-9]{8})\b$/;
+            if (!phoneRegex.test(shippingInfo.phone.trim())) {
+                message.error("Số điện thoại không hợp lệ (Bắt đầu bằng 03,05,07,08,09 và đủ 10 số)");
+                return;
+            }
+            if (shippingInfo.email && shippingInfo.email.trim()) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(shippingInfo.email.trim())) {
+                    message.error("Email không đúng định dạng");
+                    return;
+                }
+            }
+            if (!shippingInfo.province || !shippingInfo.district || !shippingInfo.ward) {
+                message.error("Vui lòng chọn đầy đủ Tỉnh/Thành phố, Quận/Huyện, Phường/Xã");
+                return;
+            }
+            if (!shippingInfo.addressDetail || !shippingInfo.addressDetail.trim()) {
+                message.error("Vui lòng nhập địa chỉ chi tiết");
+                return;
+            }
+        }
+
+        try {
+            setLoading(true);
+
+            const requestData = {
+                phuongThucThanhToan: phuongThucThanhToan || 'TIEN_MAT',
+                ghiChu: ghiChu ? ghiChu.trim() : '',
+                hinhThucNhanHang: isDelivery ? 'GIAO_HANG' : 'TAI_QUAY',
+                maVoucher: voucher?.maVoucher || null,
+                idKhachHang: customer?.id || null, // idKhachHang chỉ gửi nếu đã chọn khách hàng
+                hoTen: isDelivery ? shippingInfo.fullname.trim() : customer.hoTen,
+                soDienThoai: isDelivery ? shippingInfo.phone.trim() : customer.soDienThoai,
+                email: isDelivery ? (shippingInfo.email ? shippingInfo.email.trim() : '') : customer.email
+            };
+
+            if (isDelivery) {
+                const diaChiDayDu = `${shippingInfo.addressDetail.trim()}, ${shippingInfo.wardName}, ${shippingInfo.districtName}, ${shippingInfo.provinceName}`;
+                requestData.diaChiGiaoHang = diaChiDayDu;
+                requestData.phiShip = shippingInfo.shippingFee || 0;
+                if (shippingInfo.leadTime) {
+                    const date = new Date(shippingInfo.leadTime * 1000);
+                    requestData.ngayNhan = date.toISOString().split('T')[0];
+                }
+            }
+
+            await thanhToanHoaDon(activeBill.id, requestData);
+            message.success(`Đã thanh toán hóa đơn ${activeBill.label} thành công!`);
+            await fetchInvoices();
+        } catch (error) {
+            message.error("Thanh toán thất bại: " + error.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -207,7 +513,7 @@ const POSPage = () => {
                                     title="Thông tin sản phẩm"
                                     extra={
                                         <Space>
-                                            <Button icon={<QrcodeOutlined />}>QR Code</Button>
+                                            <Button icon={<QrcodeOutlined />} onClick={handleScanQRCode}>QR Code</Button>
                                             <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsProductModalOpen(true)}>
                                                 Thêm sản phẩm
                                             </Button>
@@ -224,34 +530,159 @@ const POSPage = () => {
                                 </Card>
 
                                 <Card title="Tài khoản" style={{ marginTop: 16 }}>
-                                    <Row justify="space-between" align="middle">
-                                        <Col>
-                                            <Space>
-                                                <UserOutlined />
-                                                <Text>Khách hàng: <b>{bill.customer.hoten}</b></Text>
+                                    <Row justify="space-between" align="top">
+                                        <Col flex="1">
+                                            <Space direction="vertical" size={4}>
+                                                <Space>
+                                                    <UserOutlined />
+                                                    <Text>Khách hàng: <b>{bill.customer.hoTen}</b></Text>
+                                                    {bill.customer.id && <Tag color="blue">Thành viên</Tag>}
+                                                </Space>
+                                                {bill.customer.id && (
+                                                    <div style={{ paddingLeft: 24, fontSize: '13px', color: '#666' }}>
+                                                        <div>Số điện thoại: {bill.customer.soDienThoai}</div>
+                                                        <div>Email: {bill.customer.email}</div>
+                                                    </div>
+                                                )}
                                             </Space>
                                         </Col>
                                         <Col>
-                                            <Button onClick={() => setIsCustomerModalOpen(true)}>Chọn tài khoản</Button>
+                                            <Space>
+                                                <Button type="primary" ghost onClick={() => setIsCustomerModalOpen(true)}>Chọn tài khoản</Button>
+                                                {bill.customer.id && (
+                                                    <Button danger onClick={resetCustomer}>Hủy</Button>
+                                                )}
+                                            </Space>
                                         </Col>
                                     </Row>
                                 </Card>
+
+                                {bill.isDelivery && (
+                                    <Card title="Thông tin giao hàng" style={{ marginTop: 16 }}>
+                                        <Form layout="vertical">
+                                            <Form.Item label="Họ tên người nhận" required>
+                                                <Input
+                                                    maxLength={100}
+                                                    value={bill.shippingInfo.fullname}
+                                                    onChange={e => updateActiveBill({ shippingInfo: { ...bill.shippingInfo, fullname: e.target.value } })}
+                                                />
+                                            </Form.Item>
+                                            <Row gutter={8}>
+                                                <Col span={12}>
+                                                    <Form.Item label="Số điện thoại" required>
+                                                        <Input
+                                                            maxLength={10}
+                                                            value={bill.shippingInfo.phone}
+                                                            onChange={e => updateActiveBill({ shippingInfo: { ...bill.shippingInfo, phone: e.target.value.replace(/\D/g, '') } })}
+                                                        />
+                                                    </Form.Item>
+                                                </Col>
+                                                <Col span={12}>
+                                                    <Form.Item label="Email">
+                                                        <Input
+                                                            maxLength={255}
+                                                            type="email"
+                                                            value={bill.shippingInfo.email}
+                                                            onChange={e => updateActiveBill({ shippingInfo: { ...bill.shippingInfo, email: e.target.value } })}
+                                                        />
+                                                    </Form.Item>
+                                                </Col>
+                                            </Row>
+                                            <Form.Item label="Tỉnh/Thành phố" required>
+                                                <Select
+                                                    value={bill.shippingInfo.province}
+                                                    onChange={handleProvinceChange}
+                                                    placeholder="Chọn tỉnh/thành"
+                                                >
+                                                    {provinces.map(p => (
+                                                        <Option key={p.ProvinceID} value={p.ProvinceID}>{p.ProvinceName}</Option>
+                                                    ))}
+                                                </Select>
+                                            </Form.Item>
+                                            <Row gutter={8}>
+                                                <Col span={12}>
+                                                    <Form.Item label="Quận/Huyện" required>
+                                                        <Select
+                                                            value={bill.shippingInfo.district}
+                                                            onChange={handleDistrictChange}
+                                                            placeholder="Chọn quận/huyện"
+                                                        >
+                                                            {districts.map(d => (
+                                                                <Option key={d.DistrictID} value={d.DistrictID}>{d.DistrictName}</Option>
+                                                            ))}
+                                                        </Select>
+                                                    </Form.Item>
+                                                </Col>
+                                                <Col span={12}>
+                                                    <Form.Item label="Phường/Xã" required>
+                                                        <Select
+                                                            value={bill.shippingInfo.ward}
+                                                            onChange={handleWardChange}
+                                                            placeholder="Chọn phường/xã"
+                                                        >
+                                                            {wards.map(w => (
+                                                                <Option key={w.WardCode} value={w.WardCode}>{w.WardName}</Option>
+                                                            ))}
+                                                        </Select>
+                                                    </Form.Item>
+                                                </Col>
+                                            </Row>
+                                            {bill.shippingInfo.leadTime && (
+                                                <div style={{ marginBottom: 16, color: '#1677ff', fontWeight: '500' }}>
+                                                    <CheckCircleOutlined /> Ngày giao dự kiến: {new Date(bill.shippingInfo.leadTime * 1000).toLocaleDateString('vi-VN')}
+                                                </div>
+                                            )}
+                                            <Form.Item label="Địa chỉ chi tiết" required>
+                                                <Input.TextArea
+                                                    rows={2}
+                                                    maxLength={255}
+                                                    value={bill.shippingInfo.addressDetail}
+                                                    onChange={e => updateActiveBill({ shippingInfo: { ...bill.shippingInfo, addressDetail: e.target.value } })}
+                                                />
+                                            </Form.Item>
+                                        </Form>
+                                    </Card>
+                                )}
                             </Col>
 
                             <Col xs={24} lg={8}>
                                 <Card title="Thông tin thanh toán">
                                     <Row gutter={16}>
                                         <Col span={24}>
-                                            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                                            <div style={{ marginBottom: 16 }}>
+                                                <Text strong>Phương thức thanh toán</Text>
                                                 <Select
-                                                    placeholder="Chọn mã giảm giá"
-                                                    style={{ flex: 1 }}
-                                                    value={bill.voucher?.id}
-                                                    allowClear
-                                                    onClear={() => updateActiveBill({ voucher: null })}
+                                                    style={{ width: '100%', marginTop: 8 }}
+                                                    value={bill.phuongThucThanhToan}
+                                                    onChange={val => updateActiveBill({ phuongThucThanhToan: val })}
                                                 >
-                                                    {bill.voucher && <Option value={bill.voucher.id}>{bill.voucher.tenma}</Option>}
+                                                    <Option value="TIEN_MAT">Tiền mặt</Option>
+                                                    <Option value="CHUYEN_KHOAN">Chuyển khoản</Option>
                                                 </Select>
+                                            </div>
+
+                                            <div style={{ marginBottom: 16 }}>
+                                                <Text strong>Ghi chú</Text>
+                                                <Input.TextArea
+                                                    rows={2}
+                                                    maxLength={255}
+                                                    style={{ marginTop: 8 }}
+                                                    placeholder="Nhập ghi chú cho hóa đơn..."
+                                                    value={bill.ghiChu}
+                                                    onChange={e => updateActiveBill({ ghiChu: e.target.value })}
+                                                />
+                                            </div>
+
+                                            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                                                <Input
+                                                    placeholder="Chọn mã giảm giá"
+                                                    style={{ flex: 1, color: 'rgba(0, 0, 0, 0.85)' }}
+                                                    value={bill.voucher?.tenMaGiamGia || ''}
+                                                    disabled
+                                                />
+                                                {bill.voucher && (
+                                                    <Button danger onClick={() => updateActiveBill({ voucher: null })}>Xóa</Button>
+                                                )}
                                                 <Button onClick={() => setIsVoucherModalOpen(true)}>Chọn mã</Button>
                                             </div>
 
@@ -262,83 +693,6 @@ const POSPage = () => {
                                                 />
                                                 <Text><CarOutlined /> Giao hàng</Text>
                                             </Space>
-
-                                            {bill.isDelivery && (
-                                                <div className="delivery-form">
-                                                    <Form layout="vertical">
-                                                        <Form.Item label="Họ tên người nhận">
-                                                            <Input
-                                                                value={bill.shippingInfo.fullname}
-                                                                onChange={e => updateActiveBill({ shippingInfo: { ...bill.shippingInfo, fullname: e.target.value } })}
-                                                            />
-                                                        </Form.Item>
-                                                        <Row gutter={8}>
-                                                            <Col span={12}>
-                                                                <Form.Item label="Số điện thoại">
-                                                                    <Input
-                                                                        value={bill.shippingInfo.phone}
-                                                                        onChange={e => updateActiveBill({ shippingInfo: { ...bill.shippingInfo, phone: e.target.value } })}
-                                                                    />
-                                                                </Form.Item>
-                                                            </Col>
-                                                            <Col span={12}>
-                                                                <Form.Item label="Email">
-                                                                    <Input
-                                                                        value={bill.shippingInfo.email}
-                                                                        onChange={e => updateActiveBill({ shippingInfo: { ...bill.shippingInfo, email: e.target.value } })}
-                                                                    />
-                                                                </Form.Item>
-                                                            </Col>
-                                                        </Row>
-                                                        <Form.Item label="Tỉnh/Thành phố">
-                                                            <Select
-                                                                value={bill.shippingInfo.province}
-                                                                onChange={handleProvinceChange}
-                                                                placeholder="Chọn tỉnh/thành"
-                                                            >
-                                                                {provinces.map(p => (
-                                                                    <Option key={p.ProvinceID} value={p.ProvinceID}>{p.ProvinceName}</Option>
-                                                                ))}
-                                                            </Select>
-                                                        </Form.Item>
-                                                        <Row gutter={8}>
-                                                            <Col span={12}>
-                                                                <Form.Item label="Quận/Huyện">
-                                                                    <Select
-                                                                        value={bill.shippingInfo.district}
-                                                                        onChange={handleDistrictChange}
-                                                                        placeholder="Chọn quận/huyện"
-                                                                    >
-                                                                        {districts.map(d => (
-                                                                            <Option key={d.DistrictID} value={d.DistrictID}>{d.DistrictName}</Option>
-                                                                        ))}
-                                                                    </Select>
-                                                                </Form.Item>
-                                                            </Col>
-                                                            <Col span={12}>
-                                                                <Form.Item label="Phường/Xã">
-                                                                    <Select
-                                                                        value={bill.shippingInfo.ward}
-                                                                        onChange={(val) => updateActiveBill({ shippingInfo: { ...bill.shippingInfo, ward: val } })}
-                                                                        placeholder="Chọn phường/xã"
-                                                                    >
-                                                                        {wards.map(w => (
-                                                                            <Option key={w.WardCode} value={w.WardCode}>{w.WardName}</Option>
-                                                                        ))}
-                                                                    </Select>
-                                                                </Form.Item>
-                                                            </Col>
-                                                        </Row>
-                                                        <Form.Item label="Địa chỉ chi tiết">
-                                                            <Input.TextArea
-                                                                rows={2}
-                                                                value={bill.shippingInfo.addressDetail}
-                                                                onChange={e => updateActiveBill({ shippingInfo: { ...bill.shippingInfo, addressDetail: e.target.value } })}
-                                                            />
-                                                        </Form.Item>
-                                                    </Form>
-                                                </div>
-                                            )}
                                         </Col>
                                     </Row>
 
@@ -349,6 +703,12 @@ const POSPage = () => {
                                             <Text>Tiền hàng:</Text>
                                             <Text>{subtotal.toLocaleString('vi-VN')}₫</Text>
                                         </Row>
+                                        {activeBill.isDelivery && (
+                                            <Row justify="space-between">
+                                                <Text>Phí vận chuyển:</Text>
+                                                <Text>{shippingFee.toLocaleString('vi-VN')}₫</Text>
+                                            </Row>
+                                        )}
                                         <Row justify="space-between">
                                             <Text>Giảm giá:</Text>
                                             <Text type="danger">-{discount.toLocaleString('vi-VN')}₫</Text>
@@ -379,18 +739,28 @@ const POSPage = () => {
                 }))}
             />
 
-            {/* <ProductSelectModal
+            <ProductSelectModal
                 visible={isProductModalOpen}
                 onCancel={() => setIsProductModalOpen(false)}
                 onSelect={addToCart}
-            /> */}
+            />
 
             <CustomerSelectModal
                 visible={isCustomerModalOpen}
                 onCancel={() => setIsCustomerModalOpen(false)}
                 onSelect={(customer) => {
-                    updateActiveBill({ customer });
+                    if (!activeBill) return;
+                    updateActiveBill({
+                        customer,
+                        shippingInfo: {
+                            ...activeBill.shippingInfo,
+                            fullname: customer.hoTen,
+                            phone: customer.soDienThoai,
+                            email: customer.email
+                        }
+                    });
                     setIsCustomerModalOpen(false);
+                    message.success("Đã chọn khách hàng và tự động điền thông tin");
                 }}
             />
 
@@ -402,6 +772,12 @@ const POSPage = () => {
                     setIsVoucherModalOpen(false);
                 }}
                 minAmount={subtotal}
+            />
+
+            <QRScannerModal
+                visible={isQRScannerModalOpen}
+                onCancel={() => setIsQRScannerModalOpen(false)}
+                onScanSuccess={handleScanSuccess}
             />
         </div>
     );

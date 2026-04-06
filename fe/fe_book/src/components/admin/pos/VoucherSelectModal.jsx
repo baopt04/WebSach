@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Table, Input, Button, message, Tag } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
-import { getAllVoucher, searchVoucher } from '../../../services/VoucherService';
+import { getValidVouchers, searchVoucher } from '../../../services/VoucherService';
 
 const VoucherSelectModal = ({ visible, onCancel, onSelect, minAmount = 0 }) => {
     const [loading, setLoading] = useState(false);
@@ -12,15 +12,15 @@ const VoucherSelectModal = ({ visible, onCancel, onSelect, minAmount = 0 }) => {
         if (visible) {
             fetchVouchers();
         }
-    }, [visible]);
+    }, [visible, minAmount]);
 
     const fetchVouchers = async () => {
         setLoading(true);
         try {
-            const data = await getAllVoucher();
+            const data = await getValidVouchers(minAmount);
             setVouchers(Array.isArray(data) ? data : (data.data || []));
         } catch (error) {
-            message.error("Lỗi tải danh sách mã giảm giá");
+            message.error("Lỗi tải danh sách mã giảm giá hợp lệ");
         } finally {
             setLoading(false);
         }
@@ -40,30 +40,35 @@ const VoucherSelectModal = ({ visible, onCancel, onSelect, minAmount = 0 }) => {
 
     const columns = [
         { title: 'STT', key: 'stt', render: (t, r, idx) => idx + 1, width: 60 },
-        { title: 'Tên mã', dataIndex: 'tenma', key: 'tenma' },
-        { 
-            title: 'Đơn tối thiểu', 
-            dataIndex: 'giatritoithieu', 
-            key: 'giatritoithieu',
+        { title: 'Mã', dataIndex: 'maVoucher', key: 'maVoucher' },
+        { title: 'Tên khuyến mãi', dataIndex: 'tenMaGiamGia', key: 'tenMaGiamGia' },
+        {
+            title: 'Đơn tối thiểu',
+            dataIndex: 'tienToiThieu',
+            key: 'tienToiThieu',
             render: (val) => `${val?.toLocaleString('vi-VN')}₫`,
         },
-        { 
-            title: 'Giá trị giảm', 
-            dataIndex: 'giatrigiam', 
-            key: 'giatrigiam',
+        {
+            title: 'Giá trị giảm',
+            dataIndex: 'giaTriGiam',
+            key: 'giaTriGiam',
             render: (val) => `${val?.toLocaleString('vi-VN')}₫`,
         },
-        { title: 'Ngày bắt đầu', dataIndex: 'ngaybatdau', key: 'ngaybatdau', render: (d) => new Date(d).toLocaleDateString('vi-VN') },
-        { title: 'Ngày kết thúc', dataIndex: 'ngayketthuc', key: 'ngayketthuc', render: (d) => new Date(d).toLocaleDateString('vi-VN') },
+        {
+            title: 'Hạn dùng',
+            dataIndex: 'ngayKetThuc',
+            key: 'ngayKetThuc',
+            render: (d) => d ? new Date(d).toLocaleDateString('vi-VN') : 'Không thời hạn'
+        },
         {
             title: 'Hành động',
             key: 'action',
             render: (_, record) => (
-                <Button 
-                    type="primary" 
-                    size="small" 
+                <Button
+                    type="primary"
+                    size="small"
                     onClick={() => onSelect(record)}
-                    disabled={minAmount < record.giatritoithieu}
+                    disabled={minAmount < record.tienToiThieu}
                 >
                     Chọn
                 </Button>
