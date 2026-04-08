@@ -13,6 +13,24 @@ const { Option } = Select;
 const { TextArea } = Input;
 const STORAGE_KEY = 'buyNowItem';
 
+const calcRandomPercentVoucherDiscount = (voucher, sumAmount) => {
+  if (!voucher || !sumAmount || sumAmount <= 0) return 0;
+  const percentValue = Number(voucher.giaTriGiam || 0);
+  const maxDiscount = Number(voucher.giamToiDa || 0);
+  const minOrder = Number(voucher.tienToiThieu || 1);
+  const percentAmount = Math.max(0, Math.round((sumAmount * percentValue) / 100));
+
+  if (maxDiscount <= 0) return percentAmount;
+
+  const orderRatio = Math.min(Math.max(sumAmount / Math.max(minOrder, 1), 0), 3);
+  const normalized = orderRatio / 3;
+  const minFactor = 0.25 + normalized * 0.65; // 25% -> 90%
+  const randomFactor = minFactor + Math.random() * (1 - minFactor);
+  const randomCap = Math.round(maxDiscount * randomFactor);
+
+  return Math.min(percentAmount, Math.max(0, randomCap));
+};
+
 export default function BuyNowPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -29,6 +47,7 @@ export default function BuyNowPage() {
   const [vouchers, setVouchers] = useState([]);
   const [selectedVoucherId, setSelectedVoucherId] = useState(null);
   const [isVoucherModalOpen, setIsVoucherModalOpen] = useState(false);
+  const [voucherDiscountAmount, setVoucherDiscountAmount] = useState(0);
 
   const [profile, setProfile] = useState(null);
   const [addresses, setAddresses] = useState([]);
@@ -126,7 +145,10 @@ export default function BuyNowPage() {
         const res = await getEligibleVouchers(sumAmount);
         const list = res || [];
         setVouchers(list);
-        if (selectedVoucherId && !list.find((v) => v.id === selectedVoucherId)) setSelectedVoucherId(null);
+        if (selectedVoucherId && !list.find((v) => v.id === selectedVoucherId)) {
+          setSelectedVoucherId(null);
+          setVoucherDiscountAmount(0);
+        }
       } catch {
         setVouchers([]);
       }
@@ -135,7 +157,19 @@ export default function BuyNowPage() {
   }, [sumAmount]);
 
   const selectedVoucher = vouchers.find((v) => v.id === selectedVoucherId);
-  const discountAmount = selectedVoucher ? selectedVoucher.giaTriGiam : 0;
+  useEffect(() => {
+    if (!selectedVoucher) {
+      setVoucherDiscountAmount(0);
+      return;
+    }
+    if (selectedVoucher.voucherType === 'GIAM_THEO_PHAN_TRAM') {
+      setVoucherDiscountAmount(calcRandomPercentVoucherDiscount(selectedVoucher, sumAmount));
+      return;
+    }
+    setVoucherDiscountAmount(Number(selectedVoucher.giaTriGiam || 0));
+  }, [selectedVoucherId, sumAmount, vouchers]);
+
+  const discountAmount = Math.max(0, Number(voucherDiscountAmount || 0));
   const finalTotal = Math.max(sumAmount + shippingFeeRounded - discountAmount, 0);
 
   useEffect(() => {
@@ -398,6 +432,7 @@ export default function BuyNowPage() {
     const payload = {
       ...(isLoggedIn && profile?.id ? { idTaiKhoan: profile.id } : {}),
       idMaGiamGia: selectedVoucherId || null,
+      tienGiamGia: discountAmount,
       maHoaDon,
       hoTen,
       soDienThoai,
@@ -554,7 +589,7 @@ export default function BuyNowPage() {
               <div className="promo-input">
                 <Button size="large" style={{ width: '100%' }} onClick={() => setIsVoucherModalOpen(true)} disabled={vouchers.length === 0}>
                   {selectedVoucher
-                    ? `${selectedVoucher.tenMaGiamGia} - Giảm ${selectedVoucher.giaTriGiam?.toLocaleString('vi-VN')}₫`
+                    ? `${selectedVoucher.tenMaGiamGia} - ${selectedVoucher.voucherType === 'GIAM_THEO_PHAN_TRAM' ? `Giảm tối đa ${selectedVoucher.giamToiDa?.toLocaleString('vi-VN')}₫` : `Giảm ${selectedVoucher.giaTriGiam?.toLocaleString('vi-VN')}₫`}`
                     : (vouchers.length > 0 ? 'Chọn mã giảm giá' : 'Không có mã phù hợp')}
                 </Button>
               </div>
@@ -623,7 +658,9 @@ export default function BuyNowPage() {
                   <label key={v.id} className={`voucher-item ${selectedVoucherId === v.id ? 'active' : ''}`}>
                     <div className="voucher-left">
                       <div className="voucher-title">
-                        <span className="voucher-name">{v.tenMaGiamGia} - Giảm {v.giaTriGiam?.toLocaleString('vi-VN')}₫</span>
+                        <span className="voucher-name">
+                          {v.tenMaGiamGia} - {v.voucherType === 'GIAM_THEO_PHAN_TRAM' ? `Giảm tối đa ${v.giamToiDa?.toLocaleString('vi-VN')}₫` : `Giảm ${v.giaTriGiam?.toLocaleString('vi-VN')}₫`}
+                        </span>
                       </div>
                       <div className="voucher-sub">
                         <span>Đơn tối thiểu: {v.tienToiThieu?.toLocaleString('vi-VN')}₫</span>

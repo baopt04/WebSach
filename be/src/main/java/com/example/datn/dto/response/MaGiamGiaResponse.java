@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.example.datn.enums.VoucherStatus;
+import com.example.datn.enums.VoucherType;
 
 @Getter
 @Setter
@@ -29,6 +30,8 @@ public class MaGiamGiaResponse {
     private LocalDateTime ngayKetThuc;
     private Integer soLuong;
     private VoucherStatus trangThai;
+    private VoucherType voucherType;
+    private BigDecimal giamToiDa;
     private LocalDateTime ngayTao;
     private LocalDateTime ngayCapNhat;
 }

@@ -25,6 +25,7 @@ import com.example.datn.enums.OrderStatus;
 import com.example.datn.enums.PaymentMethod;
 import com.example.datn.enums.TypeBill;
 import com.example.datn.enums.VoucherStatus;
+import com.example.datn.enums.VoucherType;
 import com.example.datn.repository.GioHangChiTietRepository;
 import com.example.datn.repository.GioHangRepository;
 import com.example.datn.repository.HoaDonChiTietRepository;
@@ -341,7 +342,7 @@ public class HoaDonServiceImpl implements HoaDonService {
         if (request.getIdMaGiamGia() != null) {
             maGiamGia = maGiamGiaRepository.findById(request.getIdMaGiamGia()).orElse(null);
             if (maGiamGia != null) {
-                giamGia = maGiamGia.getGiaTriGiam();
+                giamGia = tinhSoTienGiamVoucherTheoRequest(maGiamGia, tongTienHang, request.getTienGiamGia());
                 hoaDon.setGiamGia(giamGia);
             }
         } else {
@@ -666,6 +667,56 @@ public class HoaDonServiceImpl implements HoaDonService {
         hoaDon.setTongTienHang(sum);
         hoaDon.setNgayCapNhat(LocalDateTime.now());
         hoaDonRepository.save(hoaDon);
+    }
+
+    private BigDecimal tinhSoTienGiamVoucher(MaGiamGia voucher, BigDecimal tongTienHang) {
+        BigDecimal tong = tongTienHang != null ? tongTienHang : BigDecimal.ZERO;
+        BigDecimal giaTriGiam = voucher.getGiaTriGiam() != null ? voucher.getGiaTriGiam() : BigDecimal.ZERO;
+
+        BigDecimal giam;
+        if (voucher.getVoucherType() == VoucherType.GIAM_THEO_PHAN_TRAM) {
+            giam = tong.multiply(giaTriGiam).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+            BigDecimal giamToiDa = voucher.getGiamToiDa();
+            if (giamToiDa != null && giamToiDa.compareTo(BigDecimal.ZERO) >= 0 && giam.compareTo(giamToiDa) > 0) {
+                giam = giamToiDa;
+            }
+        } else {
+            giam = giaTriGiam;
+        }
+
+        if (giam.compareTo(BigDecimal.ZERO) < 0) {
+            giam = BigDecimal.ZERO;
+        }
+        if (giam.compareTo(tong) > 0) {
+            giam = tong;
+        }
+        return giam;
+    }
+
+    private BigDecimal tinhSoTienGiamVoucherTheoRequest(MaGiamGia voucher, BigDecimal tongTienHang, BigDecimal tienGiamGiaRequest) {
+        if (voucher == null) return BigDecimal.ZERO;
+        BigDecimal tong = tongTienHang != null ? tongTienHang : BigDecimal.ZERO;
+        BigDecimal giamToiDaTheoRule = tinhSoTienGiamVoucher(voucher, tong);
+
+        // Voucher giảm theo tiền: luôn dùng giá trị cố định từ hệ thống
+        if (voucher.getVoucherType() != VoucherType.GIAM_THEO_PHAN_TRAM) {
+            return giamToiDaTheoRule;
+        }
+
+        // Voucher theo %: ưu tiên số tiền FE gửi lên (đã random), nhưng không vượt rule tối đa
+        if (tienGiamGiaRequest == null) {
+            return giamToiDaTheoRule;
+        }
+        BigDecimal giamTheoRequest = tienGiamGiaRequest;
+        if (giamTheoRequest.compareTo(BigDecimal.ZERO) < 0) {
+            giamTheoRequest = BigDecimal.ZERO;
+        }
+
+        BigDecimal giam = giamTheoRequest.min(giamToiDaTheoRule);
+        if (giam.compareTo(tong) > 0) {
+            giam = tong;
+        }
+        return giam;
     }
 
 }

@@ -12,6 +12,7 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import com.example.datn.enums.VoucherStatus;
+import com.example.datn.enums.VoucherType;
 
 @Getter
 @Setter
@@ -41,6 +42,12 @@ public class MaGiamGiaRequest {
     @NotNull(message = "Số lượng không được để trống")
     @Min(value = 1, message = "Số lượng phải lớn hơn 0")
     private Integer soLuong;
+
+    @NotNull(message = "Loại giảm giá không được để trống")
+    private VoucherType voucherType;
+
+    /** Chỉ dùng khi voucherType = GIAM_THEO_PHAN_TRAM */
+    private BigDecimal giamToiDa;
 
     private VoucherStatus trangThai;
 }

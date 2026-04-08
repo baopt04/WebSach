@@ -16,26 +16,26 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class PosHoaDonController {
 
-//    private final HoaDonService hoaDonService;
-//    private final PosQuayBanHangService posQuayBanHangService;
-//
-//    @PostMapping("/tao")
-//    public ResponseEntity<HoaDonDetailResponse> taoHoaDon(@RequestBody PosHoaDonCreateRequest request) {
-//        return ResponseEntity.ok(hoaDonService.taoHoaDonBanTaiQuay(request));
-//    }
-//
-//    @PostMapping("/{id}/them-hang")
-//    public ResponseEntity<HoaDonDetailResponse> themHang(
-//            @PathVariable("id") Integer id,
-//            @Valid @RequestBody PosHoaDonThemHangRequest request) {
-//        return ResponseEntity.ok(hoaDonService.themHangBanTaiQuay(id, request));
-//    }
-//
-//    @PostMapping("/{id}/thanh-toan")
-//    public ResponseEntity<HoaDonDetailResponse> thanhToan(
-//            @PathVariable("id") Integer id,
-//            @RequestBody(required = false) PosQuayThanhToanRequest request) {
-//        PosQuayThanhToanRequest body = request != null ? request : new PosQuayThanhToanRequest();
-//        return ResponseEntity.ok(posQuayBanHangService.thanhToan(id, body));
-//    }
+    private final HoaDonService hoaDonService;
+    private final PosQuayBanHangService posQuayBanHangService;
+
+    @PostMapping("/tao")
+    public ResponseEntity<HoaDonDetailResponse> taoHoaDon(@RequestBody PosHoaDonCreateRequest request) {
+        return ResponseEntity.ok(hoaDonService.taoHoaDonBanTaiQuay(request));
+    }
+
+    @PostMapping("/{id}/them-hang")
+    public ResponseEntity<HoaDonDetailResponse> themHang(
+            @PathVariable("id") Integer id,
+            @Valid @RequestBody PosHoaDonThemHangRequest request) {
+        return ResponseEntity.ok(hoaDonService.themHangBanTaiQuay(id, request));
+    }
+
+    @PostMapping("/{id}/thanh-toan")
+    public ResponseEntity<HoaDonDetailResponse> thanhToan(
+            @PathVariable("id") Integer id,
+            @RequestBody(required = false) PosQuayThanhToanRequest request) {
+        PosQuayThanhToanRequest body = request != null ? request : new PosQuayThanhToanRequest();
+        return ResponseEntity.ok(posQuayBanHangService.thanhToan(id, body));
+    }
 }

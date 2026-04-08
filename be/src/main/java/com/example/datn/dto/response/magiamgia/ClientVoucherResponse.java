@@ -1,8 +1,8 @@
 package com.example.datn.dto.response.magiamgia;
 
 import lombok.*;
+import com.example.datn.enums.VoucherType;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Getter
@@ -15,6 +15,8 @@ public class ClientVoucherResponse {
     private String maVoucher;
     private String tenMaGiamGia;
     private BigDecimal giaTriGiam;
+    private VoucherType voucherType;
+    private BigDecimal giamToiDa;
     private BigDecimal tienToiThieu;
     private Integer soLuong;
     private LocalDateTime ngayKetThuc;

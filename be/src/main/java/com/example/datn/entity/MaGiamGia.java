@@ -1,6 +1,7 @@
 package com.example.datn.entity;
 
 import com.example.datn.enums.VoucherStatus;
+import com.example.datn.enums.VoucherType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -37,7 +38,7 @@ public class MaGiamGia {
     private LocalDateTime ngayBatDau;
 
     @Column(name = "ngay_ket_thuc")
-    private LocalDateTime  ngayKetThuc;
+    private LocalDateTime ngayKetThuc;
 
     @Column(name = "so_luong")
     private Integer soLuong;
@@ -45,6 +46,13 @@ public class MaGiamGia {
     @Column(name = "trang_thai")
     @Enumerated(EnumType.STRING)
     private VoucherStatus trangThai;
+
+    @Column(name = "loai_giam_gia")
+    @Enumerated(EnumType.STRING)
+    private VoucherType voucherType;
+
+    @Column(name = "giam_toi_da")
+    private BigDecimal giamToiDa;
 
     @Column(name = "ngay_tao")
     private LocalDateTime ngayTao;

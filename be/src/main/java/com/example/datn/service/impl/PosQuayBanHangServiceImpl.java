@@ -25,6 +25,7 @@ import com.example.datn.enums.PaymentMethod;
 import com.example.datn.enums.Role;
 import com.example.datn.enums.TypeBill;
 import com.example.datn.enums.VoucherStatus;
+import com.example.datn.enums.VoucherType;
 import com.example.datn.exception.AppException;
 import com.example.datn.repository.HoaDonChiTietRepository;
 import com.example.datn.repository.HoaDonRepository;
@@ -56,16 +57,6 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class PosQuayBanHangServiceImpl implements PosQuayBanHangService {
-
-    private final HoaDonRepository hoaDonRepository;
-    private final HoaDonChiTietRepository hoaDonChiTietRepository;
-    private final LichSuDonHangRepository lichSuDonHangRepository;
-    private final TaiKhoanRepository taiKhoanRepository;
-    private final SachRepository sachRepository;
-    private final SachHinhAnhRepository sachHinhAnhRepository;
-    private final MaGiamGiaRepository maGiamGiaRepository;
-    private final MaGiamGiaChiTietRepository maGiamGiaChiTietRepository;
-    private final PasswordEncoder passwordEncoder;
 
 
 }

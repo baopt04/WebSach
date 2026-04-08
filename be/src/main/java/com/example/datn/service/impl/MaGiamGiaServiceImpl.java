@@ -12,7 +12,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import com.example.datn.enums.VoucherStatus;
+import com.example.datn.enums.VoucherType;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Random;
@@ -44,6 +46,7 @@ public class MaGiamGiaServiceImpl implements MaGiamGiaService {
             throw new AppException(HttpStatus.BAD_REQUEST, "Tên mã giảm giá đã tồn tại");
         }
         validateDates(request.getNgayBatDau(), request.getNgayKetThuc(), null);
+        validateVoucherRule(request.getVoucherType(), request.getGiaTriGiam(), request.getGiamToiDa());
 
         String generatedMaVoucher = "VC" + String.format("%05d", new Random().nextInt(100000));
 
@@ -55,6 +58,8 @@ public class MaGiamGiaServiceImpl implements MaGiamGiaService {
                 .ngayBatDau(request.getNgayBatDau())
                 .ngayKetThuc(request.getNgayKetThuc())
                 .soLuong(request.getSoLuong())
+                .voucherType(request.getVoucherType())
+                .giamToiDa(request.getGiamToiDa())
                 .trangThai(calculateStatus(request.getNgayBatDau(), request.getNgayKetThuc()))
                 .build();
         
@@ -71,6 +76,7 @@ public class MaGiamGiaServiceImpl implements MaGiamGiaService {
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy mã giảm giá với ID: " + id));
 
         validateDates(request.getNgayBatDau(), request.getNgayKetThuc(), maGiamGia.getNgayBatDau());
+        validateVoucherRule(request.getVoucherType(), request.getGiaTriGiam(), request.getGiamToiDa());
 
         maGiamGia.setTenMaGiamGia(request.getTenMaGiamGia());
         maGiamGia.setGiaTriGiam(request.getGiaTriGiam());
@@ -78,6 +84,8 @@ public class MaGiamGiaServiceImpl implements MaGiamGiaService {
         maGiamGia.setNgayBatDau(request.getNgayBatDau());
         maGiamGia.setNgayKetThuc(request.getNgayKetThuc());
         maGiamGia.setSoLuong(request.getSoLuong());
+        maGiamGia.setVoucherType(request.getVoucherType());
+        maGiamGia.setGiamToiDa(request.getGiamToiDa());
         maGiamGia.setTrangThai(calculateStatus(request.getNgayBatDau(), request.getNgayKetThuc()));
 
         MaGiamGia updated = maGiamGiaRepository.save(maGiamGia);
@@ -134,6 +142,23 @@ public class MaGiamGiaServiceImpl implements MaGiamGiaService {
         }
     }
 
+    private void validateVoucherRule(VoucherType voucherType, BigDecimal giaTriGiam, BigDecimal giamToiDa) {
+        if (voucherType == null) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Loại giảm giá không được để trống");
+        }
+        if (giaTriGiam == null || giaTriGiam.compareTo(BigDecimal.ZERO) < 0) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Giá trị giảm không hợp lệ");
+        }
+        if (voucherType == VoucherType.GIAM_THEO_PHAN_TRAM) {
+            if (giaTriGiam.compareTo(BigDecimal.valueOf(100)) > 0) {
+                throw new AppException(HttpStatus.BAD_REQUEST, "Giá trị giảm theo % phải <= 100");
+            }
+            if (giamToiDa == null || giamToiDa.compareTo(BigDecimal.ZERO) < 0) {
+                throw new AppException(HttpStatus.BAD_REQUEST, "Voucher theo % cần giamToiDa >= 0");
+            }
+        }
+    }
+
     private MaGiamGiaResponse mapToResponse(MaGiamGia entity) {
         return MaGiamGiaResponse.builder()
                 .id(entity.getId())
@@ -145,6 +170,8 @@ public class MaGiamGiaServiceImpl implements MaGiamGiaService {
                 .ngayKetThuc(entity.getNgayKetThuc())
                 .soLuong(entity.getSoLuong())
                 .trangThai(entity.getTrangThai())
+                .voucherType(entity.getVoucherType())
+                .giamToiDa(entity.getGiamToiDa())
                 .ngayTao(entity.getNgayTao())
                 .ngayCapNhat(entity.getNgayCapNhat())
                 .build();

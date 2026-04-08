@@ -39,6 +39,8 @@ const CouponsPage = () => {
         code: item.maVoucher,
         name: item.tenMaGiamGia,
         value: item.giaTriGiam,
+        voucherType: item.voucherType,
+        giamToiDa: item.giamToiDa,
         minOrder: item.tienToiThieu,
         fromDate: item.ngayBatDau,
         toDate: item.ngayKetThuc,
@@ -68,6 +70,8 @@ const CouponsPage = () => {
         code: item.maVoucher,
         name: item.tenMaGiamGia,
         value: item.giaTriGiam,
+        voucherType: item.voucherType,
+        giamToiDa: item.giamToiDa,
         minOrder: item.tienToiThieu,
         fromDate: item.ngayBatDau,
         toDate: item.ngayKetThuc,
@@ -105,13 +109,15 @@ const CouponsPage = () => {
     setEditingItem(r);
     form.setFieldsValue({
       name: r.name,
+      voucherType: r.voucherType || 'GIAM_THEO_TIEN',
       value: r.value,
+      giamToiDa: r.giamToiDa,
       minOrder: r.minOrder,
       maxUsage: r.maxUsage,
       dateRange: r.fromDate && r.toDate
         ? [dayjs(r.fromDate, 'DD-MM-YYYY HH:mm:ss'), dayjs(r.toDate, 'DD-MM-YYYY HH:mm:ss')]
         : null,
-      status: r.status
+      status: r.status === 'HOAT_DONG'
     });
     setModalOpen(true);
   };
@@ -173,7 +179,9 @@ const CouponsPage = () => {
 
           const payload = {
             tenMaGiamGia: String(values.name || '').trim(),
+            voucherType: values.voucherType,
             giaTriGiam: values.value,
+            giamToiDa: values.voucherType === 'GIAM_THEO_PHAN_TRAM' ? values.giamToiDa : null,
             tienToiThieu: values.minOrder,
             ngayBatDau: startDateStr,
             ngayKetThuc: endDateStr,
@@ -181,7 +189,7 @@ const CouponsPage = () => {
           };
 
           if (editingItem) {
-            payload.trangThai = values.status;
+            payload.trangThai = values.status ? 'HOAT_DONG' : 'NGUNG_HOAT_DONG';
             await updateVoucher(editingItem.id, payload);
             message.success("Cập nhật thành công");
           } else {
@@ -213,7 +221,12 @@ const CouponsPage = () => {
     {
       title: 'Giá trị',
       key: 'value',
-      render: (_, r) => <strong style={{ color: '#fa8c16' }}>{r.value.toLocaleString('vi-VN')}₫</strong>,
+      render: (_, r) => <strong style={{ color: '#fa8c16' }}>{r.voucherType === 'GIAM_THEO_PHAN_TRAM' ? `${r.value}%` : `${r.value?.toLocaleString('vi-VN')}₫`}</strong>,
+    },
+    {
+      title: 'Giảm tối đa',
+      key: 'giamToiDa',
+      render: (_, r) => r.voucherType === 'GIAM_THEO_PHAN_TRAM' && r.giamToiDa ? `${r.giamToiDa?.toLocaleString('vi-VN')}₫` : '-',
     },
     {
       title: 'Đơn tối thiểu',
@@ -306,33 +319,78 @@ const CouponsPage = () => {
             <Input placeholder="Ví dụ: Giảm giá mùa hè 2024" />
           </Form.Item>
           <Form.Item
-            name="value"
-            label="Giá trị giảm (₫)"
-            rules={[
-              { required: true, message: "Vui lòng nhập giá trị giảm" },
-              { type: 'number', min: 1000, message: 'Giá trị giảm tối thiểu là 1,000₫' },
-              { type: 'number', max: 50000000, message: 'Giá trị giảm không được quá 50,000,000₫' }
-            ]}
+            name="voucherType"
+            label="Loại giảm giá"
+            rules={[{ required: true, message: 'Vui lòng chọn loại giảm giá' }]}
+            initialValue="GIAM_THEO_TIEN"
           >
-            <InputNumber
-              style={{ width: '100%' }}
-              min={0}
-              placeholder="Nhập số tiền giảm"
-              formatter={value => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
-              parser={value => value ? value.replace(/,/g, '') : ''}
-            />
+            <Select onChange={() => form.validateFields(['value', 'giamToiDa', 'minOrder'])}>
+              <Option value="GIAM_THEO_TIEN">Giảm theo số tiền</Option>
+              <Option value="GIAM_THEO_PHAN_TRAM">Giảm theo phần trăm</Option>
+            </Select>
+          </Form.Item>
+          <Form.Item noStyle dependencies={['voucherType']}>
+            {({ getFieldValue }) => {
+              const isPercent = getFieldValue('voucherType') === 'GIAM_THEO_PHAN_TRAM';
+              return (
+                <Form.Item
+                  name="value"
+                  label={isPercent ? "Giá trị giảm (%)" : "Giá trị giảm (₫)"}
+                  rules={[
+                    { required: true, message: "Vui lòng nhập giá trị giảm" },
+                    isPercent ? { type: 'number', min: 1, max: 100, message: 'Từ 1% đến 100%' } : { type: 'number', min: 1000, message: 'Từ 1,000₫' },
+                    !isPercent ? { type: 'number', max: 50000000, message: 'Không được quá 50,000,000₫' } : {}
+                  ].filter(rule => Object.keys(rule).length > 0)}
+                >
+                  <InputNumber
+                    style={{ width: '100%' }}
+                    min={isPercent ? 1 : 1000}
+                    max={isPercent ? 100 : undefined}
+                    placeholder={isPercent ? "Nhập % giảm" : "Nhập số tiền giảm"}
+                    formatter={value => isPercent ? `${value}` : value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
+                    parser={value => isPercent ? value : value ? value.replace(/,/g, '') : ''}
+                  />
+                </Form.Item>
+              );
+            }}
+          </Form.Item>
+          <Form.Item noStyle dependencies={['voucherType']}>
+            {({ getFieldValue }) => {
+              if (getFieldValue('voucherType') === 'GIAM_THEO_PHAN_TRAM') {
+                return (
+                  <Form.Item
+                    name="giamToiDa"
+                    label="Giảm tối đa (₫)"
+                    rules={[
+                      { required: true, message: "Vui lòng nhập mức giảm tối đa" },
+                      { type: 'number', min: 1000, message: 'Tối thiểu 1,000₫' }
+                    ]}
+                  >
+                    <InputNumber
+                      style={{ width: '100%' }}
+                      min={0}
+                      placeholder="Nhập mức giảm tối đa"
+                      formatter={value => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
+                      parser={value => value ? value.replace(/,/g, '') : ''}
+                    />
+                  </Form.Item>
+                );
+              }
+              return null;
+            }}
           </Form.Item>
           <Form.Item
             name="minOrder"
             label="Đơn tối thiểu (₫)"
-            dependencies={['value']}
+            dependencies={['value', 'voucherType']}
             rules={[
               { required: true, message: "Vui lòng nhập đơn tối thiểu áp dụng" },
               ({ getFieldValue }) => ({
                 validator: (_, val) => {
                   const giftValue = getFieldValue('value');
+                  const vType = getFieldValue('voucherType');
                   if (!val || !giftValue) return Promise.resolve();
-                  if (val <= giftValue) {
+                  if (vType === 'GIAM_THEO_TIEN' && val <= giftValue) {
                     return Promise.reject(new Error('Đơn tối thiểu phải lớn hơn giá trị giảm'));
                   }
                   return Promise.resolve();
@@ -404,9 +462,14 @@ const CouponsPage = () => {
             </Descriptions.Item>
             <Descriptions.Item label="Giá trị giảm">
               <span style={{ color: '#fa8c16', fontWeight: 'bold' }}>
-                {detailItem.giaTriGiam?.toLocaleString('vi-VN')}₫
+                {detailItem.voucherType === 'GIAM_THEO_PHAN_TRAM' ? `${detailItem.giaTriGiam}%` : `${detailItem.giaTriGiam?.toLocaleString('vi-VN')}₫`}
               </span>
             </Descriptions.Item>
+            {detailItem.voucherType === 'GIAM_THEO_PHAN_TRAM' && (
+              <Descriptions.Item label="Giảm tối đa">
+                {detailItem.giamToiDa?.toLocaleString('vi-VN')}₫
+              </Descriptions.Item>
+            )}
             <Descriptions.Item label="Đơn tối thiểu">
               {detailItem.tienToiThieu?.toLocaleString('vi-VN')}₫
             </Descriptions.Item>

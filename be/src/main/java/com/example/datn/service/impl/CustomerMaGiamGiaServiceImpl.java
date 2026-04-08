@@ -25,6 +25,8 @@ public class CustomerMaGiamGiaServiceImpl implements CustomerMaGiamGiaService {
                 .maVoucher(m.getMaVoucher())
                 .tenMaGiamGia(m.getTenMaGiamGia())
                 .giaTriGiam(m.getGiaTriGiam())
+                .voucherType(m.getVoucherType())
+                .giamToiDa(m.getGiamToiDa())
                 .tienToiThieu(m.getTienToiThieu())
                 .soLuong(m.getSoLuong())
                 .ngayKetThuc(m.getNgayKetThuc())

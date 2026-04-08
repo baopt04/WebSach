@@ -21,6 +21,7 @@ public class HoaDonCreateRequest {
     private BigDecimal phiShip;
     private String ghiChu;
     private Integer idMaGiamGia;
+    private BigDecimal tienGiamGia;
     private String maHoaDon;
 
     @JsonFormat(pattern = "dd-MM-yyyy")
