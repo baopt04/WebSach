@@ -19,6 +19,7 @@ const { confirm } = Modal;
 const CouponsPage = () => {
   const [data, setData] = useState([]);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -93,7 +94,13 @@ const CouponsPage = () => {
     fetchData();
   }, []);
 
-  const filtered = search ? data : data;
+  const filtered = data.filter((item) => {
+    if (statusFilter && item.status !== statusFilter) {
+      return false;
+    }
+    return true;
+  });
+  
   const paged = filtered.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
@@ -278,7 +285,14 @@ const CouponsPage = () => {
             onChange={(e) => setSearch(e.target.value)}
             onSearch={handleSearch}
           />
-          <Select defaultValue="" style={{ width: 160 }}>
+          <Select 
+            value={statusFilter}
+            onChange={(value) => {
+              setStatusFilter(value);
+              setCurrentPage(1);
+            }} 
+            style={{ width: 160 }}
+          >
             <Option value="">Tất cả trạng thái</Option>
             <Option value="HOAT_DONG">Đang hoạt động</Option>
             <Option value="NGUNG_HOAT_DONG">Ngừng hoạt động</Option>

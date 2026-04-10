@@ -86,7 +86,7 @@ public class MaGiamGiaServiceImpl implements MaGiamGiaService {
         maGiamGia.setSoLuong(request.getSoLuong());
         maGiamGia.setVoucherType(request.getVoucherType());
         maGiamGia.setGiamToiDa(request.getGiamToiDa());
-        maGiamGia.setTrangThai(calculateStatus(request.getNgayBatDau(), request.getNgayKetThuc()));
+        maGiamGia.setTrangThai(resolveStatusOnUpdate(request));
 
         MaGiamGia updated = maGiamGiaRepository.save(maGiamGia);
         return mapToResponse(updated);
@@ -110,6 +110,16 @@ public class MaGiamGiaServiceImpl implements MaGiamGiaService {
         }
     }
 
+    /**
+     * Khi admin chọn NGUNG_HOAT_DONG thì áp dụng ngay, không ghi đè bằng trạng thái suy ra từ ngày.
+     */
+    private VoucherStatus resolveStatusOnUpdate(MaGiamGiaRequest request) {
+        if (request.getTrangThai() == VoucherStatus.NGUNG_HOAT_DONG) {
+            return VoucherStatus.NGUNG_HOAT_DONG;
+        }
+        return calculateStatus(request.getNgayBatDau(), request.getNgayKetThuc());
+    }
+
     @Scheduled(fixedRate = 60000)
     public void deactivateExpiredVouchers() {
         List<MaGiamGia> allVouchers = maGiamGiaRepository.findAll();
@@ -118,7 +128,12 @@ public class MaGiamGiaServiceImpl implements MaGiamGiaService {
         for (MaGiamGia voucher : allVouchers) {
             VoucherStatus currentStatus = voucher.getTrangThai();
             VoucherStatus autoStatus = calculateStatus(voucher.getNgayBatDau(), voucher.getNgayKetThuc());
-            
+
+            // Giữ NGUNG_HOAT_DONG do cập nhật thủ công (khoảng thời gian vẫn còn hiệu lực theo ngày)
+            if (currentStatus == VoucherStatus.NGUNG_HOAT_DONG && autoStatus != VoucherStatus.NGUNG_HOAT_DONG) {
+                continue;
+            }
+
             if (currentStatus != autoStatus) {
                 voucher.setTrangThai(autoStatus);
                 hasUpdate = true;
