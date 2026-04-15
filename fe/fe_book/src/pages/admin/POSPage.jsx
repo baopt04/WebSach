@@ -18,7 +18,7 @@ import QRScannerModal from '../../components/admin/pos/QRScannerModal';
 
 import './AdminPage.css';
 import './POSPage.css';
-import { getSachByMaVach as getSachByMaVachService } from '../../services/SachService';
+import { getSachByMaVach as getSachByMaVachService } from '../../services/PosSerivce';
 import {
     getAllHoaDon,
     createHoaDon,
@@ -32,6 +32,24 @@ import { Modal } from 'antd';
 const { Text, Title } = Typography;
 const { Option } = Select;
 
+const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+const randomDiscountFromMax = (maxDiscount, subtotal, seed = Math.random()) => {
+    const max = Math.floor(Number(maxDiscount || 0));
+    const maxAllowed = Math.max(0, max - 1); // luôn nhỏ hơn mức trần
+    if (maxAllowed <= 0) return 0;
+
+    // Tổng tiền càng cao thì khoảng random càng nghiêng về mức giảm cao hơn
+    const tier = clamp(subtotal / 1000000, 0, 1);
+    const minFactor = 0.25 + (0.35 * tier); // 25% -> 60%
+    const maxFactor = 0.55 + (0.44 * tier); // 55% -> 99%
+    const boundedSeed = clamp(seed, 0, 1);
+    const factor = minFactor + (boundedSeed * Math.max(0.01, maxFactor - minFactor));
+    const discount = Math.floor(maxAllowed * factor);
+
+    return clamp(discount, 1, maxAllowed);
+};
+
 const INITIAL_BILL = (id, index) => ({
     id: `bill-${id}`,
     label: index > 0 ? `Hóa đơn ${index}` : "Hóa đơn mới",
@@ -39,6 +57,7 @@ const INITIAL_BILL = (id, index) => ({
     customer: { hoTen: 'Khách lẻ', id: null },
     voucher: null,
     phuongThucThanhToan: 'TIEN_MAT',
+    tienKhachDua: null,
     ghiChu: '',
     isDelivery: false,
     shippingInfo: {
@@ -191,11 +210,34 @@ const POSPage = () => {
         setIsQRScannerModalOpen(true);
     };
 
+    const normalizeScannedCode = (rawCode) => {
+        const value = String(rawCode || '').trim();
+        if (!value) return '';
+
+        // Hỗ trợ trường hợp QR chứa URL có tham số mã vạch
+        if (/^https?:\/\//i.test(value)) {
+            try {
+                const url = new URL(value);
+                const candidate = url.searchParams.get('maVach') || url.searchParams.get('barcode') || url.searchParams.get('code');
+                return (candidate || value).trim();
+            } catch {
+                return value;
+            }
+        }
+        return value;
+    };
+
     const handleScanSuccess = async (code) => {
         setIsQRScannerModalOpen(false);
         try {
             setLoading(true);
-            const product = await getSachByMaVachService(code);
+            const normalizedCode = normalizeScannedCode(code);
+            if (!normalizedCode) {
+                message.error("Mã quét được đang rỗng hoặc không hợp lệ");
+                return;
+            }
+
+            const product = await getSachByMaVachService(normalizedCode);
             if (product) {
                 await addSachToHoaDon(activeBill.id, {
                     idSach: product.id,
@@ -204,7 +246,7 @@ const POSPage = () => {
                 message.success(`Đã thêm "${product.tenSach}" vào hóa đơn`);
                 await fetchInvoices();
             } else {
-                message.error("Không tìm thấy sản phẩm có mã: " + code);
+                message.error("Không tìm thấy sản phẩm có mã: " + normalizedCode);
             }
         } catch (error) {
             message.error("Lỗi khi quét hoặc thêm sản phẩm");
@@ -388,9 +430,25 @@ const POSPage = () => {
     ];
 
     const subtotal = activeBill?.cartItems?.reduce((sum, item) => sum + item.donGia * item.soLuong, 0) || 0;
-    const discount = activeBill?.voucher ? activeBill.voucher.giaTriGiam : 0;
+
+    let discount = 0;
+    if (activeBill?.voucher) {
+        if (activeBill.voucher.giaTriGiam <= 100) {
+            const p = activeBill.voucher.giaTriGiam / 100;
+            let calculated = subtotal * p;
+            if (activeBill.voucher.giamToiDa) {
+                calculated = Math.min(calculated, activeBill.voucher.giamToiDa);
+            }
+            discount = randomDiscountFromMax(calculated, subtotal, activeBill.voucherSeed);
+        } else {
+            discount = activeBill.voucher.giaTriGiam;
+        }
+    }
+
     const shippingFee = activeBill?.isDelivery ? (activeBill.shippingInfo.shippingFee || 0) : 0;
     const finalTotal = Math.max(0, subtotal + shippingFee - discount);
+    const tienKhachDua = Number(activeBill?.tienKhachDua || 0);
+    const tienThua = Math.max(0, tienKhachDua - finalTotal);
 
     const resetCustomer = () => {
         if (!activeBill) return;
@@ -417,6 +475,18 @@ const POSPage = () => {
         if (ghiChu && ghiChu.length > 255) {
             message.error("Ghi chú không được vượt quá 255 ký tự");
             return;
+        }
+
+        if (phuongThucThanhToan === 'TIEN_MAT') {
+            const soTienKhachDua = Number(activeBill.tienKhachDua);
+            if (!Number.isFinite(soTienKhachDua) || soTienKhachDua <= 0) {
+                message.error("Vui lòng nhập số tiền khách đưa");
+                return;
+            }
+            if (soTienKhachDua < finalTotal) {
+                message.error("Số tiền khách đưa không được nhỏ hơn tổng tiền đơn hàng");
+                return;
+            }
         }
 
         if (isDelivery) {
@@ -450,38 +520,47 @@ const POSPage = () => {
             }
         }
 
-        try {
-            setLoading(true);
+        Modal.confirm({
+            title: 'Xác nhận thanh toán',
+            content: `Bạn có chắc chắn muốn thanh toán hóa đơn ${activeBill.label} không?`,
+            okText: 'Đồng ý',
+            cancelText: 'Hủy',
+            onOk: async () => {
+                try {
+                    setLoading(true);
 
-            const requestData = {
-                phuongThucThanhToan: phuongThucThanhToan || 'TIEN_MAT',
-                ghiChu: ghiChu ? ghiChu.trim() : '',
-                hinhThucNhanHang: isDelivery ? 'GIAO_HANG' : 'TAI_QUAY',
-                maVoucher: voucher?.maVoucher || null,
-                idKhachHang: customer?.id || null, // idKhachHang chỉ gửi nếu đã chọn khách hàng
-                hoTen: isDelivery ? shippingInfo.fullname.trim() : customer.hoTen,
-                soDienThoai: isDelivery ? shippingInfo.phone.trim() : customer.soDienThoai,
-                email: isDelivery ? (shippingInfo.email ? shippingInfo.email.trim() : '') : customer.email
-            };
+                    const requestData = {
+                        phuongThucThanhToan: phuongThucThanhToan || 'TIEN_MAT',
+                        ghiChu: ghiChu ? ghiChu.trim() : '',
+                        hinhThucNhanHang: isDelivery ? 'GIAO_HANG' : 'TAI_QUAY',
+                        maVoucher: voucher?.maVoucher || null,
+                        soTienGiamVoucher: voucher ? discount : 0,
+                        idKhachHang: customer?.id || null, // idKhachHang chỉ gửi nếu đã chọn khách hàng
+                        hoTen: isDelivery ? shippingInfo.fullname.trim() : customer.hoTen,
+                        soDienThoai: isDelivery ? shippingInfo.phone.trim() : customer.soDienThoai,
+                        email: isDelivery ? (shippingInfo.email ? shippingInfo.email.trim() : '') : customer.email
+                    };
 
-            if (isDelivery) {
-                const diaChiDayDu = `${shippingInfo.addressDetail.trim()}, ${shippingInfo.wardName}, ${shippingInfo.districtName}, ${shippingInfo.provinceName}`;
-                requestData.diaChiGiaoHang = diaChiDayDu;
-                requestData.phiShip = shippingInfo.shippingFee || 0;
-                if (shippingInfo.leadTime) {
-                    const date = new Date(shippingInfo.leadTime * 1000);
-                    requestData.ngayNhan = date.toISOString().split('T')[0];
+                    if (isDelivery) {
+                        const diaChiDayDu = `${shippingInfo.addressDetail.trim()}, ${shippingInfo.wardName}, ${shippingInfo.districtName}, ${shippingInfo.provinceName}`;
+                        requestData.diaChiGiaoHang = diaChiDayDu;
+                        requestData.phiShip = shippingInfo.shippingFee || 0;
+                        if (shippingInfo.leadTime) {
+                            const date = new Date(shippingInfo.leadTime * 1000);
+                            requestData.ngayNhan = date.toISOString().split('T')[0];
+                        }
+                    }
+
+                    await thanhToanHoaDon(activeBill.id, requestData);
+                    message.success(`Đã thanh toán hóa đơn ${activeBill.label} thành công!`);
+                    await fetchInvoices();
+                } catch (error) {
+                    message.error("Thanh toán thất bại: " + error.message);
+                } finally {
+                    setLoading(false);
                 }
             }
-
-            await thanhToanHoaDon(activeBill.id, requestData);
-            message.success(`Đã thanh toán hóa đơn ${activeBill.label} thành công!`);
-            await fetchInvoices();
-        } catch (error) {
-            message.error("Thanh toán thất bại: " + error.message);
-        } finally {
-            setLoading(false);
-        }
+        });
     };
 
     return (
@@ -722,12 +801,35 @@ const POSPage = () => {
                                         </Row>
                                     </div>
 
+                                    {bill.phuongThucThanhToan === 'TIEN_MAT' && (
+                                        <div style={{ marginTop: 16 }}>
+                                            <Text strong>Tiền khách đưa</Text>
+                                            <InputNumber
+                                                style={{ width: '100%', marginTop: 8 }}
+                                                min={0}
+                                                step={1000}
+                                                value={bill.tienKhachDua}
+                                                placeholder="Nhập số tiền khách thanh toán"
+                                                formatter={(value) => value ? `${Number(value).toLocaleString('vi-VN')}₫` : ''}
+                                                parser={(value) => value ? value.replace(/[^\d]/g, '') : ''}
+                                                onChange={(val) => updateActiveBill({ tienKhachDua: val == null ? null : Number(val) })}
+                                            />
+                                            <div style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between' }}>
+                                                <Text type="secondary">Tiền thừa trả khách:</Text>
+                                                <Text strong style={{ color: '#1677ff' }}>
+                                                    {(Math.max(0, Number(bill.tienKhachDua || 0) - finalTotal)).toLocaleString('vi-VN')}₫
+                                                </Text>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <Button
                                         type="primary"
                                         size="large"
                                         block
                                         style={{ marginTop: 16 }}
                                         icon={<CheckCircleOutlined />}
+                                        loading={loading}
                                         onClick={handleConfirmPayment}
                                     >
                                         Xác nhận thanh toán
@@ -768,7 +870,7 @@ const POSPage = () => {
                 visible={isVoucherModalOpen}
                 onCancel={() => setIsVoucherModalOpen(false)}
                 onSelect={(voucher) => {
-                    updateActiveBill({ voucher });
+                    updateActiveBill({ voucher, voucherSeed: Math.random() });
                     setIsVoucherModalOpen(false);
                 }}
                 minAmount={subtotal}

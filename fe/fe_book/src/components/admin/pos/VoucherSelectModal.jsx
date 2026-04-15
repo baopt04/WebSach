@@ -52,7 +52,7 @@ const VoucherSelectModal = ({ visible, onCancel, onSelect, minAmount = 0 }) => {
             title: 'Giá trị giảm',
             dataIndex: 'giaTriGiam',
             key: 'giaTriGiam',
-            render: (val) => `${val?.toLocaleString('vi-VN')}₫`,
+            render: (val) => val <= 100 ? `${val}%` : `${val?.toLocaleString('vi-VN')}₫`,
         },
         {
             title: 'Hạn dùng',

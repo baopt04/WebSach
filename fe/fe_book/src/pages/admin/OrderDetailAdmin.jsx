@@ -301,14 +301,21 @@ const OrderDetailAdmin = () => {
     )
   }));
 
-  const statusList = [
-    { key: 'CHO_XAC_NHAN', title: 'Chờ xác nhận', icon: <FormOutlined /> },
-    { key: 'DA_XAC_NHAN', title: 'Đã xác nhận', icon: <FileDoneOutlined /> },
-    { key: DANG_CHUAN_BI_HANG, title: 'Đang chuẩn bị hàng', icon: <InboxOutlined /> },
-    { key: 'DANG_GIAO', title: 'Đang giao hàng', icon: <CarOutlined /> },
-    { key: 'DA_THANH_TOAN', title: 'Đã thanh toán', icon: <CreditCardFilled /> },
-    { key: 'THANH_CONG', title: 'Thành công', icon: <CheckCircleOutlined /> },
-  ];
+  const isOffline = hoaDon.loaiHoaDon !== 'ONLINE';
+
+  const statusList = isOffline 
+    ? [
+        { key: 'TAO_HOA_DON', title: 'Tạo hóa đơn', icon: <FormOutlined /> },
+        { key: 'THANH_CONG', title: 'Thành công', icon: <CheckCircleOutlined /> },
+      ]
+    : [
+        { key: 'CHO_XAC_NHAN', title: 'Chờ xác nhận', icon: <FormOutlined /> },
+        { key: 'DA_XAC_NHAN', title: 'Đã xác nhận', icon: <FileDoneOutlined /> },
+        { key: DANG_CHUAN_BI_HANG, title: 'Đang chuẩn bị hàng', icon: <InboxOutlined /> },
+        { key: 'DANG_GIAO', title: 'Đang giao hàng', icon: <CarOutlined /> },
+        { key: 'DA_THANH_TOAN', title: 'Đã thanh toán', icon: <CreditCardFilled /> },
+        { key: 'THANH_CONG', title: 'Thành công', icon: <CheckCircleOutlined /> },
+      ];
 
   let currentStep = statusList.findIndex((s) => s.key === hoaDon.trangThai);
 

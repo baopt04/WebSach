@@ -13,6 +13,7 @@ import './AdminPage.css';
 const { Option } = Select;
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
+const HIDDEN_ORDER_STATUS = 'TAO_HOA_DON';
 
 const OrdersPage = () => {
   const navigate = useNavigate();
@@ -25,11 +26,16 @@ const OrdersPage = () => {
   const [detailOrder, setDetailOrder] = useState(null);
   const pageSize = 10;
 
+  const normalizeOrders = (list) => {
+    const source = Array.isArray(list) ? list : [];
+    return source.filter((item) => item?.trangThai !== HIDDEN_ORDER_STATUS);
+  };
+
   const loadOrders = async () => {
     setLoading(true);
     try {
       const data = await getAllHoaDon();
-      setOrders(data || []);
+      setOrders(normalizeOrders(data));
     } catch (error) {
       console.error(error);
       message.error("Lỗi khi tải danh sách hóa đơn");
@@ -53,7 +59,7 @@ const OrdersPage = () => {
     setLoading(true);
     try {
       const data = await searchHoaDon(value);
-      setOrders(data || []);
+      setOrders(normalizeOrders(data));
     } catch (error) {
       console.error(error);
       message.error("Lỗi khi tìm kiếm hóa đơn");
@@ -75,7 +81,7 @@ const OrdersPage = () => {
     setLoading(true);
     try {
       const data = await searchHoaDonByDate(tuNgay, denNgay);
-      setOrders(data || []);
+      setOrders(normalizeOrders(data));
     } catch (error) {
       console.error(error);
       message.error("Lỗi khi tìm kiếm hóa đơn theo ngày");

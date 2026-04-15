@@ -74,7 +74,7 @@ public class TaiKhoanServiceImpl implements TaiKhoanService {
         TaiKhoan saved = taiKhoanRepository.save(taiKhoan);
         
 
-        String subject = "Thông báo tạo tài khoản thành công tại website ekumi fukuda";
+        String subject = "Thông báo tạo tài khoản thành công tại website DREAM BOOK";
         String content = "Chào " + saved.getHoTen() + ",<br/>"
                 + "Tài khoản của bạn đã được tạo thành công.<br/>"
                 + "Mã tài khoản: <b>" + saved.getEmail() + "</b><br/>"

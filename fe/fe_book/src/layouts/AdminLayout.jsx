@@ -116,7 +116,7 @@ const AdminLayout = () => {
       >
         <div className="admin-logo">
           <BookOutlined className="admin-logo-icon" />
-          {!collapsed && <span className="admin-logo-text">BookAdmin</span>}
+          {!collapsed && <span className="admin-logo-text">DREAM BOOK</span>}
         </div>
         <Menu
           theme="dark"

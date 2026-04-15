@@ -13,12 +13,9 @@ import java.util.Optional;
 
 public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
 
-    /** Trừ trạng thái chỉ định (dùng để loại TAO_HOA_DON), sắp xếp ngayCapNhat giảm dần */
     Page<HoaDon> findByTrangThaiNotOrderByNgayCapNhatDesc(OrderStatus trangThai, Pageable pageable);
 
-    /**
-     * Đếm đơn theo trạng thái trong khoảng thời gian, theo ngày cập nhật (phù hợp POS: thanh toán cập nhật ngayCapNhat).
-     */
+
     @Query("SELECT h.trangThai, COUNT(h.id) FROM HoaDon h WHERE h.trangThai <> :draft AND h.ngayCapNhat >= :tu AND h.ngayCapNhat < :den GROUP BY h.trangThai")
     List<Object[]> countByTrangThaiForNgayCapNhatRange(
             @Param("draft") OrderStatus draft,

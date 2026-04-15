@@ -39,7 +39,7 @@ public class HoaDonOrderMailServiceImpl implements HoaDonOrderMailService {
     @Value("${spring.mail.username}")
     private String fromUsername;
 
-    @Value("${app.mail.shop-name:EKUMIFUKUDA}")
+    @Value("${app.mail.shop-name:DREAM BOOK}")
     private String shopName;
 
     private static final DateTimeFormatter DT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");

@@ -116,18 +116,39 @@ const ProductsPage = () => {
 
   const downloadQRCode = () => {
     const canvas = document.getElementById('qrcode-container')?.querySelector('canvas');
-    if (canvas) {
-      const url = canvas.toDataURL('image/png');
-      const a = document.createElement('a');
-      a.download = `QRCode_${detailItem?.maVach || 'product'}.png`;
-      a.href = url;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    } else {
+    if (!canvas) {
       message.error('Không tìm thấy mã QR để tải xuống');
+      return;
     }
+
+    // Xuất QR theo kiểu pixel-perfect để tránh mờ module gây khó quét
+    const sourceSize = canvas.width || canvas.clientWidth;
+    const scale = 8; // scale theo bội số nguyên để giữ cạnh QR sắc nét
+    const margin = 40; // vùng trắng (quiet zone) giúp scanner nhận diện ổn định
+    const targetSize = sourceSize * scale + margin * 2;
+    const exportCanvas = document.createElement('canvas');
+    exportCanvas.width = targetSize;
+    exportCanvas.height = targetSize;
+    const ctx = exportCanvas.getContext('2d');
+
+    // Nền trắng rõ ràng
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, targetSize, targetSize);
+
+    // Tắt smoothing để không sinh viền xám/mờ giữa các ô QR
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(canvas, margin, margin, sourceSize * scale, sourceSize * scale);
+
+    const url = exportCanvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.download = `QRCode_${detailItem?.maVach || 'product'}.png`;
+    a.href = url;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    message.success('Đã tải mã QR thành công!');
   };
+
 
   const columns = [
     {
@@ -333,11 +354,12 @@ const ProductsPage = () => {
                       <div id="qrcode-container" style={{ padding: 12, background: '#fff', border: '1px solid #eee', borderRadius: '8px', display: 'inline-block' }}>
                         <QRCode
                           value={detailItem.maVach}
-                          size={180}
-                          bordered={true}
-                          errorLevel="H"
+                          size={220}
+                          bordered={false}
+                          errorLevel="M"
                           color="#000"
-                          style={{ padding: 16, background: '#fff' }}
+                          bgColor="#fff"
+                          style={{ display: 'block' }}
                         />
                         <div style={{ marginTop: 8, fontSize: 13, color: '#000', fontWeight: 600 }}>{detailItem.maVach}</div>
                       </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, Modal, Form, Input, InputNumber, Select, DatePicker, Space, Button, Tooltip, message, Descriptions, Switch } from 'antd';
+import { Card, Modal, Form, Input, InputNumber, Select, DatePicker, Space, Button, Tooltip, message, Descriptions, Switch, Tabs } from 'antd';
 import { EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
@@ -20,6 +20,7 @@ const CouponsPage = () => {
   const [data, setData] = useState([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [voucherTab, setVoucherTab] = useState('GIAM_THEO_TIEN');
   const [currentPage, setCurrentPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -95,12 +96,11 @@ const CouponsPage = () => {
   }, []);
 
   const filtered = data.filter((item) => {
-    if (statusFilter && item.status !== statusFilter) {
-      return false;
-    }
+    if (item.voucherType !== voucherTab) return false;
+    if (statusFilter && item.status !== statusFilter) return false;
     return true;
   });
-  
+
   const paged = filtered.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
@@ -274,10 +274,25 @@ const CouponsPage = () => {
     },
   ];
 
+  const tabItems = [
+    { key: 'GIAM_THEO_TIEN', label: ' Giảm theo tiền' },
+    { key: 'GIAM_THEO_PHAN_TRAM', label: 'Giảm theo %' },
+  ];
+
   return (
     <div className="admin-page">
       <PageHeader title="Quản lý Mã giảm giá" onAdd={openAdd} />
       <Card bordered={false} className="admin-card">
+        <Tabs
+          activeKey={voucherTab}
+          onChange={(key) => {
+            setVoucherTab(key);
+            setCurrentPage(1);
+            setStatusFilter('');
+          }}
+          items={tabItems}
+          style={{ marginBottom: 8 }}
+        />
         <div className="admin-toolbar">
           <SearchBar
             placeholder="Tìm theo mã hoặc tên giảm giá..."
@@ -285,12 +300,12 @@ const CouponsPage = () => {
             onChange={(e) => setSearch(e.target.value)}
             onSearch={handleSearch}
           />
-          <Select 
+          <Select
             value={statusFilter}
             onChange={(value) => {
               setStatusFilter(value);
               setCurrentPage(1);
-            }} 
+            }}
             style={{ width: 160 }}
           >
             <Option value="">Tất cả trạng thái</Option>

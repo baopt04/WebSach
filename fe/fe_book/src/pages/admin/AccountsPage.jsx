@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, Modal, Form, Input, Select, DatePicker, Switch, Space, Button, Tooltip, Avatar, message, Descriptions, Tag } from 'antd';
+import { Card, Modal, Form, Input, Select, DatePicker, Switch, Space, Button, Tooltip, Avatar, message, Descriptions, Tag, Tabs } from 'antd';
 import { EditOutlined, DeleteOutlined, EyeOutlined, UserOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import DataTable from '../../components/admin/DataTable';
@@ -20,6 +20,7 @@ const AccountsPage = () => {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
+  const [activeTab, setActiveTab] = useState('admin');
   const [currentPage, setCurrentPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -94,7 +95,8 @@ const AccountsPage = () => {
   }, []);
 
   const filtered = search ? data : data;
-  const filteredByRole = filtered.filter(a => {
+  const filteredByTab = filtered.filter(a => activeTab === 'admin' ? a.vaiTro !== 'ROLE_CUSTOMER' : a.vaiTro === 'ROLE_CUSTOMER');
+  const filteredByRole = filteredByTab.filter(a => {
     if (!roleFilter) return true;
     return a.vaiTro === roleFilter;
   });
@@ -324,7 +326,7 @@ const AccountsPage = () => {
   const handleSubmit = (values) => {
     confirm({
       title: editingItem ? 'Xác nhận cập nhật tài khoản?' : 'Xác nhận tạo tài khoản mới?',
-      content: editingItem 
+      content: editingItem
         ? `Bạn có chắc chắn muốn cập nhật thông tin cho tài khoản ${editingItem.hoTen}?`
         : 'Hệ thống sẽ tạo tài khoản mới với các thông tin bạn đã cung cấp. Tiếp tục?',
       okText: 'Xác nhận',
@@ -426,19 +428,32 @@ const AccountsPage = () => {
     <div className="admin-page">
       <PageHeader title="Quản lý Tài khoản" onAdd={openAdd} addLabel="Thêm tài khoản" />
       <Card bordered={false} className="admin-card">
-        <div className="admin-toolbar">
+        <Tabs
+          activeKey={activeTab}
+          onChange={(key) => {
+            setActiveTab(key);
+            setRoleFilter('');
+            setCurrentPage(1);
+          }}
+          items={[
+            { key: 'admin', label: 'Tài khoản Nội bộ (Admin/Nhân viên)' },
+            { key: 'customer', label: 'Tài khoản Khách hàng' }
+          ]}
+        />
+        <div className="admin-toolbar" style={{ marginTop: 16 }}>
           <SearchBar
             placeholder="Tìm theo tên hoặc email..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onSearch={handleSearch}
           />
-          <Select defaultValue="" style={{ width: 160 }} onChange={(v) => { setRoleFilter(v); setCurrentPage(1); }}>
-            <Option value="">Tất cả vai trò</Option>
-            <Option value="ROLE_ADMIN">Admin</Option>
-            <Option value="ROLE_STAFF">Nhân viên</Option>
-            <Option value="ROLE_CUSTOMER">Khách hàng</Option>
-          </Select>
+          {activeTab === 'admin' && (
+            <Select value={roleFilter} style={{ width: 160 }} onChange={(v) => { setRoleFilter(v); setCurrentPage(1); }}>
+              <Option value="">Tất cả</Option>
+              <Option value="ROLE_ADMIN">Admin</Option>
+              <Option value="ROLE_STAFF">Nhân viên</Option>
+            </Select>
+          )}
         </div>
         <DataTable
           loading={loading}
@@ -462,9 +477,9 @@ const AccountsPage = () => {
         width={600}
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit} validateTrigger="onChange">
-          <Form.Item 
-            name="hoTen" 
-            label="Họ tên" 
+          <Form.Item
+            name="hoTen"
+            label="Họ tên"
             rules={[
               { required: true, message: 'Vui lòng nhập họ tên' },
               { whitespace: true, message: 'Họ tên không được chỉ chứa khoảng trắng' },
@@ -475,9 +490,9 @@ const AccountsPage = () => {
           >
             <Input placeholder="Nhập họ và tên" />
           </Form.Item>
-          <Form.Item 
-            name="email" 
-            label="Email" 
+          <Form.Item
+            name="email"
+            label="Email"
             rules={[
               { required: true, message: 'Vui lòng nhập email' },
               { type: 'email', message: 'Định dạng email không hợp lệ' },
@@ -486,9 +501,9 @@ const AccountsPage = () => {
           >
             <Input placeholder="Nhập email" />
           </Form.Item>
-          <Form.Item 
-            name="soDienThoai" 
-            label="Số điện thoại" 
+          <Form.Item
+            name="soDienThoai"
+            label="Số điện thoại"
             rules={[
               { required: true, message: 'Vui lòng nhập số điện thoại' },
               { pattern: /^(0[3|5|7|8|9])+([0-9]{8})\b$/, message: 'Số điện thoại 10 số, bắt đầu bằng 03, 05, 07, 08, 09' }
@@ -502,8 +517,8 @@ const AccountsPage = () => {
               <Option value="ROLE_CUSTOMER">Khách hàng</Option>
             </Select>
           </Form.Item>
-          <Form.Item 
-            name="ngaySinh" 
+          <Form.Item
+            name="ngaySinh"
             label="Ngày sinh"
             rules={[
               { required: true, message: 'Vui lòng chọn ngày sinh' },
@@ -694,9 +709,9 @@ const AccountsPage = () => {
               ))}
             </Select>
           </Form.Item>
-          <Form.Item 
-            name="diaChiChiTiet" 
-            label="Địa chỉ chi tiết" 
+          <Form.Item
+            name="diaChiChiTiet"
+            label="Địa chỉ chi tiết"
             rules={[
               { required: true, message: 'Vui lòng nhập Địa chỉ cụ thể' },
               { min: 5, message: 'Địa chỉ cụ thể quá ngắn (tối thiểu 5 ký tự)' }

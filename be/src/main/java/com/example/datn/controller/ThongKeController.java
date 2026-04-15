@@ -72,22 +72,18 @@ public class ThongKeController {
         return ResponseEntity.ok(thongKeService.getThongKeTongHop());
     }
 
-    /** 10 đơn cập nhật gần nhất (ngayCapNhat), không gồm TAO_HOA_DON */
+
     @GetMapping("/don-hang-gan-nhat")
     public ResponseEntity<List<HoaDonResponse>> getMuoiDonHangGanNhat() {
         return ResponseEntity.ok(thongKeService.getMuoiDonHangGanNhat());
     }
 
-    /** Tổng số sản phẩm (sách) đang hoạt động: trangThai = true */
     @GetMapping("/tong-san-pham-hoat-dong")
     public ResponseEntity<Long> getTongSanPhamHoatDong() {
         return ResponseEntity.ok(thongKeService.getTongSoSanPhamDangHoatDong());
     }
 
-    /**
-     * Số đơn theo từng trạng thái trong một ngày (mặc định hôm nay), theo ngayCapNhat (phù hợp đơn POS thanh toán trong ngày).
-     * Không gồm TAO_HOA_DON. Kèm tongDoanhThuThanhCong = tổng (tongTienHang - giamGia) đơn THANH_CONG trong ngày.
-     */
+
     @GetMapping("/so-don-theo-trang-thai-ngay")
     public ResponseEntity<ThongKeSoDonTrangThaiTheoNgayResponse> getSoDonTheoTrangThaiTrongNgay(
             @RequestParam(name = "ngay", required = false)

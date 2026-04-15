@@ -31,7 +31,7 @@ const ClientHeader = () => {
         {/* Logo */}
         <Link to="/" className="header-logo">
           <div className="logo-icon">📚</div>
-          <span className="logo-text">Eimi Fukada</span>
+          <span className="logo-text">DREAM BOOK</span>
         </Link>
 
         {/* Nav desktop */}

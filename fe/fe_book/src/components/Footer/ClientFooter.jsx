@@ -20,7 +20,7 @@ const ClientFooter = () => {
         <div className="footer-col footer-brand">
           <div className="footer-logo">
             <span className="footer-logo-icon">📚</span>
-            <span className="footer-logo-text">Eimi Fukada</span>
+            <span className="footer-logo-text">DREAM BOOK</span>
           </div>
           <p className="footer-desc">
             Cửa hàng sách trực tuyến hàng đầu Việt Nam. Hơn 10,000+ đầu sách
