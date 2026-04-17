@@ -16,4 +16,5 @@ public interface CustomerSanPhamService {
 
     List<com.example.datn.dto.response.client.ClientNhaXuatBanResponse> getAllNhaXuatBan();
     List<ClientSanPhamResponse> getSanPhamByNhaXuatBan(Integer idNhaXuatBan);
+    List<ClientSanPhamResponse> searchSanPhamByTen(String keyword);
 }

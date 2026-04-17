@@ -108,7 +108,7 @@ const QRScannerModal = ({ visible, onCancel, onScanSuccess }) => {
                 </div>
                 <div id="reader" style={{ width: '100%', overflow: 'hidden', borderRadius: '8px' }}></div>
                 <div style={{ marginTop: 8, textAlign: 'center', color: '#666', fontSize: '13px' }}>
-                    Đưa mã vào khung hình — đảm bảo đủ ánh sáng và camera rõ nét
+                    Đưa mã vào khung hình để quét tự động
                 </div>
                 {lastScanned && (
                     <div style={{ marginTop: 8, padding: '6px 12px', background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 6, fontSize: 13, color: '#389e0d' }}>
@@ -120,7 +120,7 @@ const QRScannerModal = ({ visible, onCancel, onScanSuccess }) => {
             <Divider>Hoặc</Divider>
 
             {/* Upload file QR */}
-            <div style={{ marginBottom: 16 }}>
+            {/* <div style={{ marginBottom: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, color: '#722ed1', fontWeight: 500 }}>
                     Upload ảnh QR để quét
                 </div>
@@ -137,7 +137,7 @@ const QRScannerModal = ({ visible, onCancel, onScanSuccess }) => {
                 <div style={{ marginTop: 4, fontSize: 12, color: '#999' }}>
                     Dùng khi camera không quét được QR
                 </div>
-            </div>
+            </div> */}
 
             <Divider>Nhập QR thủ công</Divider>
 

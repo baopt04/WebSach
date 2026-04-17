@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Typography, Table, Tag, Spin } from 'antd';
+import { Row, Col, Card, Typography, Table, Tag, Spin, Button, message } from 'antd';
 import {
   ShoppingOutlined,
   FileTextOutlined,
@@ -8,9 +8,14 @@ import {
   RiseOutlined,
   ArrowUpOutlined,
   ArrowDownOutlined,
+  CloseCircleOutlined,
+  DownloadOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import * as StatisticalService from '../../services/StatisticalService';
+import { getAllHoaDon } from '../../services/hoaDonService';
+
+import { exportDashboardExcel } from '../../services/ExcelService';
 import './DashboardPage.css';
 
 const { Title, Text } = Typography;
@@ -72,8 +77,10 @@ const topBookColumns = [
 const DashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState({
+    totalRevenue: 0,
     totalOrders: 0,
-    monthlyRevenue: 0,
+    ordersThisMonth: 0,
+    cancelledOrders: 0,
     yearlyChartData: Array.from({ length: 12 }, (_, i) => ({ month: `T${i + 1}`, value: 0 })),
     topBooks: [],
     recentOrders: [],
@@ -102,13 +109,17 @@ const DashboardPage = () => {
         topBooksList,
         recentOrdersRes,
         productsCount,
-        todayStatusRes
+        todayStatusRes,
+        totalRevenueRes,
+        cancelledOrdersRes
       ] = await Promise.all([
         StatisticalService.getSummaryStatistics(),
         StatisticalService.getTop10BestSellingBooks(),
         StatisticalService.getDonHangGanNhat(),
         StatisticalService.getTongSanPhamHoatDong(),
-        StatisticalService.getSoDonTheoTrangThaiTheoNgay(dayjs().format('YYYY-MM-DD'))
+        StatisticalService.getSoDonTheoTrangThaiTheoNgay(dayjs().format('YYYY-MM-DD')),
+        StatisticalService.getTotalRevenue(),
+        StatisticalService.getTotalCancelledOrders()
       ]);
 
       const currentMonthData = summary.chiTietTheoThang?.find(
@@ -139,8 +150,10 @@ const DashboardPage = () => {
       });
 
       setDashboardData({
+        totalRevenue: totalRevenueRes || 0,
         totalOrders: summary.tongDonHang || 0,
-        monthlyRevenue: currentMonthData.tongDoanhThu || 0,
+        ordersThisMonth: currentMonthData.tongDonHang || 0,
+        cancelledOrders: cancelledOrdersRes || 0,
         yearlyChartData: structuredChartData,
         topBooks: topBooksList || [],
         recentOrders: formattedRecentOrders,
@@ -162,8 +175,8 @@ const DashboardPage = () => {
 
   const kpiData = [
     {
-      title: 'Doanh thu tháng',
-      value: dashboardData.monthlyRevenue,
+      title: 'Tổng doanh thu',
+      value: dashboardData.totalRevenue,
       prefix: '',
       suffix: '₫',
       icon: <DollarOutlined />,
@@ -182,21 +195,21 @@ const DashboardPage = () => {
       up: true,
     },
     {
-      title: 'Tổng sản phẩm',
-      value: dashboardData.productsCount,
+      title: 'Đơn hàng tháng này',
+      value: dashboardData.ordersThisMonth,
       icon: <ShoppingOutlined />,
       color: '#fa8c16',
       bg: '#fff7e6',
-      trend: '+3.2%',
+      trend: '+5.4%',
       up: true,
     },
     {
-      title: 'Tài khoản khách hàng',
-      value: MOCK_ACCOUNTS,
-      icon: <UserOutlined />,
-      color: '#722ed1',
-      bg: '#f9f0ff',
-      trend: '-1.2%',
+      title: 'Đơn hàng đã hủy',
+      value: dashboardData.cancelledOrders,
+      icon: <CloseCircleOutlined />,
+      color: '#ff4d4f',
+      bg: '#fff1f0',
+      trend: '-2.1%',
       up: false,
     },
   ];
@@ -213,6 +226,52 @@ const DashboardPage = () => {
 
   return (
     <div className="dashboard-page">
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+        <Button
+          type="primary"
+          icon={<DownloadOutlined />}
+          onClick={async () => {
+            try {
+              let fileHandle = null;
+              if (window.showSaveFilePicker) {
+                fileHandle = await window.showSaveFilePicker({
+                  suggestedName: `Dashboard_DreamBook_${new Date().getTime()}.xlsx`,
+                  types: [{
+                    description: 'Excel File',
+                    accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] }
+                  }]
+                });
+              }
+
+              message.loading({ content: 'Đang chuẩn bị dữ liệu xuất Excel...', key: 'export' });
+              const allOrdersRes = await getAllHoaDon();
+
+              const exportData = {
+                totalRevenue: dashboardData.totalRevenue,
+                totalOrders: dashboardData.totalOrders,
+                ordersThisMonth: dashboardData.ordersThisMonth,
+                cancelledOrders: dashboardData.cancelledOrders,
+                allOrders: allOrdersRes
+              };
+
+              const success = await exportDashboardExcel(exportData, fileHandle);
+              if (success) {
+                message.success({ content: 'Xuất file báo cáo thành công!', key: 'export', duration: 2 });
+              } else if (success === false && fileHandle) {
+                message.destroy('export');
+              } else {
+                message.error({ content: 'Không thể tạo file báo cáo. Vui lòng thử lại.', key: 'export', duration: 2 });
+              }
+            } catch (err) {
+              if (err.name === 'AbortError') return;
+              console.error(err);
+              message.error({ content: 'Lỗi tải dữ liệu hóa đơn.', key: 'export', duration: 2 });
+            }
+          }}
+        >
+          Xuất báo cáo Excel
+        </Button>
+      </div>
       <Row gutter={[16, 16]} className="kpi-row">
         {kpiData.map((kpi, i) => (
           <Col xs={24} sm={12} lg={6} key={i}>
@@ -228,10 +287,6 @@ const DashboardPage = () => {
                   <div className="kpi-value">
                     {kpi.value.toLocaleString('vi-VN')}
                     {kpi.suffix && <span className="kpi-suffix">{kpi.suffix}</span>}
-                  </div>
-                  <div className={`kpi-trend ${kpi.up ? 'up' : 'down'}`}>
-                    {kpi.up ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
-                    <span>{kpi.trend} so với tháng trước</span>
                   </div>
                 </div>
               </div>

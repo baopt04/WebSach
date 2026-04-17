@@ -22,6 +22,11 @@ public class SanPhamCustomerController {
         return ResponseEntity.ok(clientSanPhamService.getAllSanPham());
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<List<ClientSanPhamResponse>> searchSanPhamByTen(@RequestParam("keyword") String keyword) {
+        return ResponseEntity.ok(clientSanPhamService.searchSanPhamByTen(keyword));
+    }
+
     @GetMapping("/ban-chay")
     public ResponseEntity<List<ClientSanPhamResponse>> getSanPhamBanChay() {
         return ResponseEntity.ok(clientSanPhamService.getSanPhamBanChay());

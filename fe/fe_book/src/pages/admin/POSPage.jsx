@@ -33,6 +33,8 @@ const { Text, Title } = Typography;
 const { Option } = Select;
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+const SHIP_ROUNDING_STEP = 10000;
+const roundCurrency = (value) => Math.round((Number(value) || 0) / SHIP_ROUNDING_STEP) * SHIP_ROUNDING_STEP;
 
 const randomDiscountFromMax = (maxDiscount, subtotal, seed = Math.random()) => {
     const max = Math.floor(Number(maxDiscount || 0));
@@ -89,10 +91,10 @@ const POSPage = () => {
         setLoading(true);
         try {
             const data = await getAllHoaDon();
-            const formattedBills = data.map(item => ({
-                ...INITIAL_BILL(item.id, 0),
+            const formattedBills = data.map((item, index) => ({
+                ...INITIAL_BILL(item.id, index),
                 id: item.id.toString(),
-                label: item.maHoaDon,
+                label: `Hóa đơn ${index + 1}`,
                 cartItems: item.chiTiets || [], // Đồng bộ danh sách sản phẩm từ backend
                 apiData: item
             }));
@@ -146,7 +148,6 @@ const POSPage = () => {
             message.error("Không thể tạo thêm hóa đơn");
         }
     };
-
     const removeBill = (targetKey) => {
         if (bills.length === 1) return;
         const newBills = bills.filter(b => b.id !== targetKey);
@@ -378,7 +379,7 @@ const POSPage = () => {
                     ...activeBill.shippingInfo,
                     ward: val,
                     wardName: ward?.WardName || '',
-                    shippingFee: feeRes.data.total,
+                    shippingFee: roundCurrency(feeRes.data.total),
                     leadTime: leadTimeRes.data.leadtime
                 }
             });
@@ -445,7 +446,7 @@ const POSPage = () => {
         }
     }
 
-    const shippingFee = activeBill?.isDelivery ? (activeBill.shippingInfo.shippingFee || 0) : 0;
+    const shippingFee = activeBill?.isDelivery ? roundCurrency(activeBill.shippingInfo.shippingFee) : 0;
     const finalTotal = Math.max(0, subtotal + shippingFee - discount);
     const tienKhachDua = Number(activeBill?.tienKhachDua || 0);
     const tienThua = Math.max(0, tienKhachDua - finalTotal);
@@ -544,7 +545,7 @@ const POSPage = () => {
                     if (isDelivery) {
                         const diaChiDayDu = `${shippingInfo.addressDetail.trim()}, ${shippingInfo.wardName}, ${shippingInfo.districtName}, ${shippingInfo.provinceName}`;
                         requestData.diaChiGiaoHang = diaChiDayDu;
-                        requestData.phiShip = shippingInfo.shippingFee || 0;
+                        requestData.phiShip = roundCurrency(shippingInfo.shippingFee);
                         if (shippingInfo.leadTime) {
                             const date = new Date(shippingInfo.leadTime * 1000);
                             requestData.ngayNhan = date.toISOString().split('T')[0];
@@ -552,7 +553,11 @@ const POSPage = () => {
                     }
 
                     await thanhToanHoaDon(activeBill.id, requestData);
-                    message.success(`Đã thanh toán hóa đơn ${activeBill.label} thành công!`);
+                    message.success(
+                        isDelivery
+                            ? `Thanh toán hóa đơn thành công`
+                            : `Thanh toán hóa đơn thành công!`
+                    );
                     await fetchInvoices();
                 } catch (error) {
                     message.error("Thanh toán thất bại: " + error.message);
@@ -584,7 +589,7 @@ const POSPage = () => {
                 items={bills.map(bill => ({
                     label: bill.label,
                     key: bill.id,
-                    closable: bills.length > 1,
+                    closable: false,
                     children: (
                         <Row gutter={16}>
                             <Col xs={24} lg={16}>
@@ -728,7 +733,7 @@ const POSPage = () => {
                                 <Card title="Thông tin thanh toán">
                                     <Row gutter={16}>
                                         <Col span={24}>
-                                            <div style={{ marginBottom: 16 }}>
+                                            {/* <div style={{ marginBottom: 16 }}>
                                                 <Text strong>Phương thức thanh toán</Text>
                                                 <Select
                                                     style={{ width: '100%', marginTop: 8 }}
@@ -738,10 +743,10 @@ const POSPage = () => {
                                                     <Option value="TIEN_MAT">Tiền mặt</Option>
                                                     <Option value="CHUYEN_KHOAN">Chuyển khoản</Option>
                                                 </Select>
-                                            </div>
+                                            </div> */}
 
                                             <div style={{ marginBottom: 16 }}>
-                                                <Text strong>Ghi chú</Text>
+                                                <Text strong>Ghi chú đơn hàng</Text>
                                                 <Input.TextArea
                                                     rows={2}
                                                     maxLength={255}

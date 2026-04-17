@@ -9,3 +9,12 @@ export const login = async (email, matKhau) => {
         throw handleError(error);
     }
 };
+
+export const register = async (payload) => {
+    try {
+        const res = await axiosClient.post("/api/auth/register", payload);
+        return res.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};

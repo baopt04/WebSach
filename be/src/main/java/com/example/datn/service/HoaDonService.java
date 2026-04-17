@@ -24,10 +24,8 @@ public interface HoaDonService {
     List<HoaDonResponse> searchHoaDonByKeyword(String keyword);
     List<HoaDonResponse> searchHoaDonByDateRange(LocalDate tuNgay, LocalDate denNgay);
 
-    /** Bán tại quầy: tạo hóa đơn nháp, nhân viên = user đăng nhập */
     HoaDonDetailResponse taoHoaDonBanTaiQuay(PosHoaDonCreateRequest request);
 
-    /** Thêm dòng hàng, trừ tồn kho */
     HoaDonDetailResponse themHangBanTaiQuay(Integer idHoaDon, PosHoaDonThemHangRequest request);
 
 }

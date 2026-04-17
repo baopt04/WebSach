@@ -12,6 +12,17 @@ export const getAllSanPham = async () => {
     }
 };
 
+export const searchSanPhamByTen = async (keyword) => {
+    try {
+        const res = await axiosClient.get(`${BASE}/search`, {
+            params: { keyword }
+        });
+        return res.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
 export const getAllTacGia = async () => {
     try {
         const res = await axiosClient.get(`${BASE}/tac-gia`);

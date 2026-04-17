@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Slider,
   Checkbox,
@@ -22,6 +22,7 @@ import {
 } from '@ant-design/icons';
 import {
   getAllSanPham,
+  searchSanPhamByTen,
   getAllTheLoai,
   getAllNhaXuatBan,
   getAllTacGia,
@@ -201,6 +202,7 @@ const extractArray = (res) => {
 
 const ProductsPage = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTheLoai, setActiveTheLoai] = useState(null);
   const [activeNhaXuatBan, setActiveNhaXuatBan] = useState(null);
   const [activeTacGia, setActiveTacGia] = useState(null);
@@ -216,6 +218,11 @@ const ProductsPage = () => {
   const [tacGias, setTacGias] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterLoading, setFilterLoading] = useState(false);
+  const keywordFromHeader = (searchParams.get('keyword') || '').trim();
+
+  useEffect(() => {
+    setSearchText(keywordFromHeader);
+  }, [keywordFromHeader]);
 
   useEffect(() => {
     const loadMeta = async () => {
@@ -254,6 +261,8 @@ const ProductsPage = () => {
         res = await getSanPhamByNhaXuatBan(activeNhaXuatBan);
       } else if (activeTacGia !== null) {
         res = await getSanPhamByTacGia(activeTacGia);
+      } else if (keywordFromHeader) {
+        res = await searchSanPhamByTen(keywordFromHeader);
       } else {
         res = await getAllSanPham();
       }
@@ -269,7 +278,7 @@ const ProductsPage = () => {
       setFilterLoading(false);
       setLoading(false);
     }
-  }, [activeTheLoai, activeNhaXuatBan, activeTacGia]);
+  }, [activeTheLoai, activeNhaXuatBan, activeTacGia, keywordFromHeader]);
 
   useEffect(() => {
     loadProducts();
@@ -350,6 +359,11 @@ const ProductsPage = () => {
             prefix={<SearchOutlined style={{ color: '#bbb' }} />}
             value={searchText}
             onChange={(e) => { setSearchText(e.target.value); setCurrentPage(1); }}
+            onPressEnter={() => {
+              const kw = searchText.trim();
+              if (kw) setSearchParams({ keyword: kw });
+              else setSearchParams({});
+            }}
             allowClear
             className="search-input"
           />

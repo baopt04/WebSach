@@ -14,12 +14,27 @@ const DANG_CHUAN_BI_HANG = 'DANG_CHUAN_BI_HANG';
 const STATUSES_ALLOW_CANCEL = ['CHO_XAC_NHAN', 'DA_XAC_NHAN', DANG_CHUAN_BI_HANG];
 
 const SHOP_INFO = {
-  name: 'Cửa hàng FPOLY',
+  name: 'Cửa hàng sách DREAM BOOK',
   address: 'Trường cao đẳng FPOLY, đường Trịnh Văn Bô, phường Xuân Phương, TP. Hà Nội',
   phone: '04532323153',
 };
 
 const formatMoneyVnd = (n) => (Number(n) || 0).toLocaleString('vi-VN');
+const toNgayNhanPayload = (value) => {
+  if (value == null) return undefined;
+  const raw = String(value).trim();
+  if (!raw) return undefined;
+
+  if (/^\d{2}-\d{2}-\d{4}$/.test(raw)) return raw;
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) return raw.replace(/\//g, '-');
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    const [y, m, d] = raw.split('-');
+    return `${d}-${m}-${y}`;
+  }
+
+  const parsed = dayjs(raw);
+  return parsed.isValid() ? parsed.format('DD-MM-YYYY') : undefined;
+};
 
 const OrderDetailAdmin = () => {
   const { id } = useParams();
@@ -108,7 +123,7 @@ const OrderDetailAdmin = () => {
         soDienThoai: hoaDon.soDienThoai,
         email: hoaDon.email,
         phiShip: typeof hoaDon.phiShip === 'number' ? hoaDon.phiShip.toLocaleString('vi-VN') : hoaDon.phiShip,
-        ngayNhan: hoaDon.ngayNhan,
+        ngayNhan: hoaDon.ngayNhan ? dayjs(hoaDon.ngayNhan).format('DD-MM-YYYY') : '',
         ghiChu: hoaDon.ghiChu,
       });
     }
@@ -158,7 +173,7 @@ const OrderDetailAdmin = () => {
         }
 
         if (leadTimeRes?.data?.leadtime) {
-          const leadTimeStr = dayjs(leadTimeRes.data.leadtime * 1000).format('DD/MM/YYYY');
+          const leadTimeStr = dayjs(leadTimeRes.data.leadtime * 1000).format('DD-MM-YYYY');
           editForm.setFieldsValue({ ngayNhan: leadTimeStr });
         }
       } catch (error) {
@@ -265,14 +280,23 @@ const OrderDetailAdmin = () => {
         email: values.email?.trim(),
         diaChiGiaoHang,
         phiShip: Number(rawPhiShip),
+        ngayNhan: toNgayNhanPayload(values.ngayNhan),
         ghiChu: values.ghiChu?.trim()
       };
 
-      await updateHoaDon(id, payload);
-      message.success('Cập nhật thông tin thành công');
-      setIsEditOpen(false);
-      editForm.resetFields()
-      fetchData();
+      Modal.confirm({
+        title: 'Xác nhận cập nhật đơn hàng',
+        content: 'Bạn có chắc chắn muốn cập nhật thông tin đơn hàng này không?',
+        okText: 'Xác nhận',
+        cancelText: 'Hủy',
+        onOk: async () => {
+          await updateHoaDon(id, payload);
+          message.success('Cập nhật thông tin thành công');
+          setIsEditOpen(false);
+          editForm.resetFields();
+          await fetchData();
+        }
+      });
     } catch (error) {
       message.error('Cập nhật thất bại');
     }
@@ -292,30 +316,36 @@ const OrderDetailAdmin = () => {
           : 'gray',
     children: (
       <>
+
         <Text strong style={{ display: 'block' }}>{statusMap[h.trangThai] || h.trangThai}</Text>
         <Text type="secondary" style={{ fontSize: 12 }}>
           {dayjs(h.ngayTao).format('DD/MM/YYYY HH:mm')}
         </Text>
-        {h.ghiChu && <div style={{ fontSize: 12, marginTop: 4 }}>GH: {h.ghiChu}</div>}
+        {h.tenNhanVien && <div style={{ fontSize: 12, marginTop: 4, color: '#1890ff' }}>Người tác động:{h.tenNhanVien}</div>}
+        {h.ghiChu && <div style={{ fontSize: 12, marginTop: 4 }}>Ghi chú: {h.ghiChu}</div>}
       </>
     )
   }));
 
   const isOffline = hoaDon.loaiHoaDon !== 'ONLINE';
+  const shippingFlowStatuses = ['CHO_XAC_NHAN', 'DA_XAC_NHAN', DANG_CHUAN_BI_HANG, 'DANG_GIAO', 'DA_THANH_TOAN'];
+  const isOfflineDelivery = isOffline && (
+    Boolean(hoaDon.diaChiGiaoHang?.trim()) || shippingFlowStatuses.includes(hoaDon.trangThai)
+  );
 
-  const statusList = isOffline 
+  const statusList = (!isOffline || isOfflineDelivery)
     ? [
-        { key: 'TAO_HOA_DON', title: 'Tạo hóa đơn', icon: <FormOutlined /> },
-        { key: 'THANH_CONG', title: 'Thành công', icon: <CheckCircleOutlined /> },
-      ]
+      { key: 'CHO_XAC_NHAN', title: 'Chờ xác nhận', icon: <FormOutlined /> },
+      { key: 'DA_XAC_NHAN', title: 'Đã xác nhận', icon: <FileDoneOutlined /> },
+      { key: DANG_CHUAN_BI_HANG, title: 'Đang chuẩn bị hàng', icon: <InboxOutlined /> },
+      { key: 'DANG_GIAO', title: 'Đang giao hàng', icon: <CarOutlined /> },
+      { key: 'DA_THANH_TOAN', title: 'Đã thanh toán', icon: <CreditCardFilled /> },
+      { key: 'THANH_CONG', title: 'Thành công', icon: <CheckCircleOutlined /> },
+    ]
     : [
-        { key: 'CHO_XAC_NHAN', title: 'Chờ xác nhận', icon: <FormOutlined /> },
-        { key: 'DA_XAC_NHAN', title: 'Đã xác nhận', icon: <FileDoneOutlined /> },
-        { key: DANG_CHUAN_BI_HANG, title: 'Đang chuẩn bị hàng', icon: <InboxOutlined /> },
-        { key: 'DANG_GIAO', title: 'Đang giao hàng', icon: <CarOutlined /> },
-        { key: 'DA_THANH_TOAN', title: 'Đã thanh toán', icon: <CreditCardFilled /> },
-        { key: 'THANH_CONG', title: 'Thành công', icon: <CheckCircleOutlined /> },
-      ];
+      { key: 'TAO_HOA_DON', title: 'Tạo hóa đơn', icon: <FormOutlined /> },
+      { key: 'THANH_CONG', title: 'Thành công', icon: <CheckCircleOutlined /> },
+    ];
 
   let currentStep = statusList.findIndex((s) => s.key === hoaDon.trangThai);
 
@@ -449,115 +479,115 @@ const OrderDetailAdmin = () => {
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/admin/orders')} style={{ marginBottom: 16 }}>
           Quay lại danh sách
         </Button>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <Title level={3} style={{ margin: 0 }}>Mã đơn: {hoaDon.maHoaDon} </Title>
-        <Space>
-          {!(isCancelled || hoaDon.trangThai === 'THANH_CONG') && (
-            <Button type="primary" onClick={() => setIsStatusOpen(true)}>
-              Chuyển trạng thái
-            </Button>
-          )}
-          {!isCancelled && STATUSES_ALLOW_CANCEL.includes(hoaDon.trangThai) && (
-            <Button danger onClick={() => setIsCancelOpen(true)}>
-              Hủy đơn
-            </Button>
-          )}
-          {showDeliverySlip && (
-            <Button icon={<PrinterOutlined />} onClick={() => window.print()}>
-              In phiếu
-            </Button>
-          )}
-        </Space>
-      </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <Title level={3} style={{ margin: 0 }}>Mã đơn: {hoaDon.maHoaDon} </Title>
+          <Space>
+            {!(isCancelled || hoaDon.trangThai === 'THANH_CONG') && (
+              <Button type="primary" onClick={() => setIsStatusOpen(true)}>
+                Chuyển trạng thái
+              </Button>
+            )}
+            {!isCancelled && STATUSES_ALLOW_CANCEL.includes(hoaDon.trangThai) && (
+              <Button danger onClick={() => setIsCancelOpen(true)}>
+                Hủy đơn
+              </Button>
+            )}
+            {showDeliverySlip && (
+              <Button icon={<PrinterOutlined />} onClick={() => window.print()}>
+                In phiếu
+              </Button>
+            )}
+          </Space>
+        </div>
 
-      <Row gutter={[24, 24]}>
-        <Col xs={24} md={18}>
-          <Card bordered style={{ borderRadius: 8, marginBottom: 24, padding: '24px 0' }}>
-            <Steps current={currentStep} items={stepsItems} labelPlacement="vertical" responsive={false} />
-          </Card>
+        <Row gutter={[24, 24]}>
+          <Col xs={24} md={18}>
+            <Card bordered style={{ borderRadius: 8, marginBottom: 24, padding: '24px 0' }}>
+              <Steps current={currentStep} items={stepsItems} labelPlacement="vertical" responsive={false} />
+            </Card>
 
-          <Card bordered style={{ borderRadius: 8, marginBottom: 24 }}
-            title={<div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span>Thông tin đơn hàng</span>
-              {
-                ![
-                  'DA_XAC_NHAN',
-                  'DANG_CHUAN_BI_HANG',
-                  'DANG_GIAO',
-                  'DA_THANH_TOAN',
-                  'THANH_CONG',
-                  'DA_HUY'
-                ].includes(hoaDon.trangThai) && (
-                  <Button
-                    size="small"
-                    type="primary"
-                    onClick={() => setIsEditOpen(true)}
-                  >
-                    Cập nhật
-                  </Button>
-                )
-              }
-            </div>}>
-            <Row gutter={[32, 16]}>
-              <Col span={12}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div><Text type="secondary">Loại hóa đơn: </Text> <Tag color={hoaDon.loaiHoaDon === 'ONLINE' ? 'green' : 'orange'}>{hoaDon.loaiHoaDon || 'TẠI QUẦY'}</Tag></div>
-                  <div><Text type="secondary">Khách hàng: </Text> <Text strong>{hoaDon.hoTenKhachHang}</Text></div>
-                  <div><Text type="secondary">Email: </Text> <Text>{hoaDon.email || '--'}</Text></div>
-                  <div><Text type="secondary">Số điện thoại: </Text> <Text>{hoaDon.soDienThoai}</Text></div>
-                </div>
-              </Col>
-              <Col span={12}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div><Text type="secondary">Thời gian đặt hàng: </Text><Text>{hoaDon.ngayTao ? dayjs(hoaDon.ngayTao).format('DD/MM/YYYY HH:mm') : '--'}</Text></div>
-                  <div><Text type="secondary">Thời gian dự kiến nhận: </Text><Text>{hoaDon.ngayNhan ? dayjs(hoaDon.ngayNhan).format('DD/MM/YYYY') : '--'}</Text></div>
-                  <div><Text type="secondary">Địa chỉ giao hàng: </Text><Text>{hoaDon.diaChiGiaoHang || 'Mua tại quầy'}</Text></div>
-                  <div><Text type="secondary">Ghi chú: </Text><Text italic>{hoaDon.ghiChu || 'Không có'}</Text></div>
-                </div>
-              </Col>
-            </Row>
-          </Card>
+            <Card bordered style={{ borderRadius: 8, marginBottom: 24 }}
+              title={<div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Thông tin đơn hàng</span>
+                {
+                  ![
+                    'DA_XAC_NHAN',
+                    'DANG_CHUAN_BI_HANG',
+                    'DANG_GIAO',
+                    'DA_THANH_TOAN',
+                    'THANH_CONG',
+                    'DA_HUY'
+                  ].includes(hoaDon.trangThai) && (
+                    <Button
+                      size="small"
+                      type="primary"
+                      onClick={() => setIsEditOpen(true)}
+                    >
+                      Cập nhật
+                    </Button>
+                  )
+                }
+              </div>}>
+              <Row gutter={[32, 16]}>
+                <Col span={12}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div><Text type="secondary">Loại hóa đơn: </Text> <Tag color={hoaDon.loaiHoaDon === 'ONLINE' ? 'green' : 'orange'}>{hoaDon.loaiHoaDon || 'TẠI QUẦY'}</Tag></div>
+                    <div><Text type="secondary">Khách hàng: </Text> <Text strong>{hoaDon.hoTenKhachHang}</Text></div>
+                    <div><Text type="secondary">Email: </Text> <Text>{hoaDon.email || '--'}</Text></div>
+                    <div><Text type="secondary">Số điện thoại: </Text> <Text>{hoaDon.soDienThoai}</Text></div>
+                  </div>
+                </Col>
+                <Col span={12}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div><Text type="secondary">Thời gian đặt hàng: </Text><Text>{hoaDon.ngayTao ? dayjs(hoaDon.ngayTao).format('DD/MM/YYYY HH:mm') : '--'}</Text></div>
+                    <div><Text type="secondary">Thời gian dự kiến nhận: </Text><Text>{hoaDon.ngayNhan ? dayjs(hoaDon.ngayNhan).format('DD/MM/YYYY') : '--'}</Text></div>
+                    <div><Text type="secondary">Địa chỉ giao hàng: </Text><Text>{hoaDon.diaChiGiaoHang || 'Mua tại quầy'}</Text></div>
+                    <div><Text type="secondary">Ghi chú: </Text><Text italic>{hoaDon.ghiChu || 'Không có'}</Text></div>
+                  </div>
+                </Col>
+              </Row>
+            </Card>
 
-          <Card bordered style={{ borderRadius: 8 }}>
-            <Title level={5}>Danh sách sản phẩm</Title>
-            <Table columns={columns} dataSource={chiTiets} rowKey="id" pagination={false} bordered />
-            <Divider />
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <div style={{ width: 300 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <Text type="secondary">Tổng tiền hàng:</Text><Text strong>{(hoaDon.tongTienHang || 0).toLocaleString('vi-VN')}₫</Text>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <Text type="secondary">Phí vận chuyển:</Text><Text strong>{(hoaDon.phiShip || 0).toLocaleString('vi-VN')}₫</Text>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <Text type="secondary">Phiếu giảm giá:</Text><Text strong style={{ color: '#52c41a' }}>-{(hoaDon.giamGia || 0).toLocaleString('vi-VN')}₫</Text>
-                </div>
-                <Divider style={{ margin: '12px 0' }} />
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Title level={5}>Tổng thanh toán:</Title>
-                  <Title level={4} style={{ color: '#ff4d4f', margin: 0 }}>{totalPayment > 0 ? totalPayment.toLocaleString('vi-VN') : 0}₫</Title>
+            <Card bordered style={{ borderRadius: 8 }}>
+              <Title level={5}>Danh sách sản phẩm</Title>
+              <Table columns={columns} dataSource={chiTiets} rowKey="id" pagination={false} bordered />
+              <Divider />
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <div style={{ width: 300 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <Text type="secondary">Tổng tiền hàng:</Text><Text strong>{(hoaDon.tongTienHang || 0).toLocaleString('vi-VN')}₫</Text>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <Text type="secondary">Phí vận chuyển:</Text><Text strong>{(hoaDon.phiShip || 0).toLocaleString('vi-VN')}₫</Text>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <Text type="secondary">Phiếu giảm giá:</Text><Text strong style={{ color: '#52c41a' }}>-{(hoaDon.giamGia || 0).toLocaleString('vi-VN')}₫</Text>
+                  </div>
+                  <Divider style={{ margin: '12px 0' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Title level={5}>Tổng thanh toán:</Title>
+                    <Title level={4} style={{ color: '#ff4d4f', margin: 0 }}>{totalPayment > 0 ? totalPayment.toLocaleString('vi-VN') : 0}₫</Title>
+                  </div>
                 </div>
               </div>
-            </div>
-          </Card>
-        </Col>
+            </Card>
+          </Col>
 
-        <Col xs={24} md={6}>
-          <Card bordered title="Lịch sử đơn hàng" style={{ borderRadius: 8, height: '100%' }}>
-            <Timeline items={timelineItems} style={{ marginTop: 16 }} />
-          </Card>
-        </Col>
-      </Row>
+          <Col xs={24} md={6}>
+            <Card bordered title="Lịch sử đơn hàng" style={{ borderRadius: 8, height: '100%' }}>
+              <Timeline items={timelineItems} style={{ marginTop: 16 }} />
+            </Card>
+          </Col>
+        </Row>
       </div>
 
       <Modal title="Cập nhật trạng thái đơn hàng" open={isStatusOpen} onCancel={() => setIsStatusOpen(false)} onOk={() => statusForm.submit()}>
         <Form form={statusForm} layout="vertical" onFinish={handleChangeStatusSubmit} scrollToFirstError>
           <div style={{ marginBottom: 16 }}>
           </div>
-          <Form.Item 
-            name="ghiChu" 
-            label="Ghi chú " 
+          <Form.Item
+            name="ghiChu"
+            label="Ghi chú "
             rules={[
               { required: true, message: 'Vui lòng nhập ghi chú' },
               { whitespace: true, message: 'Ghi chú không được chỉ chứa khoảng trắng' },
@@ -572,9 +602,9 @@ const OrderDetailAdmin = () => {
       <Modal title="Xác nhận hủy đơn hàng" open={isCancelOpen} onCancel={() => setIsCancelOpen(false)} onOk={() => cancelForm.submit()} okButtonProps={{ danger: true }}>
         <Form form={cancelForm} layout="vertical" onFinish={handleCancelSubmit} scrollToFirstError>
           <Text style={{ display: 'block', marginBottom: 16 }}>Hành động này không thể hoàn tác. Bạn có chắc chắn muốn hủy đơn hàng này?</Text>
-          <Form.Item 
-            name="ghiChu" 
-            label="Lý do hủy đơn" 
+          <Form.Item
+            name="ghiChu"
+            label="Lý do hủy đơn"
             rules={[
               { required: true, message: 'Vui lòng nhập lý do hủy' },
               { whitespace: true, message: 'Lý do không được chỉ chứa khoảng trắng' },
@@ -591,8 +621,8 @@ const OrderDetailAdmin = () => {
         <Form form={editForm} layout="vertical" onFinish={handleEditSubmit} scrollToFirstError>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item 
-                name="hoTenKhachHang" 
+              <Form.Item
+                name="hoTenKhachHang"
                 label="Họ tên"
                 rules={[
                   { required: true, message: 'Vui lòng nhập họ tên' },
@@ -604,8 +634,8 @@ const OrderDetailAdmin = () => {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item 
-                name="soDienThoai" 
+              <Form.Item
+                name="soDienThoai"
                 label="Số điện thoại"
                 rules={[
                   { required: true, message: 'Vui lòng nhập số điện thoại' },
@@ -618,8 +648,8 @@ const OrderDetailAdmin = () => {
           </Row>
           <Row gutter={16}>
             <Col span={24}>
-              <Form.Item 
-                name="email" 
+              <Form.Item
+                name="email"
                 label="Email"
                 rules={[
                   { type: 'email', message: 'Email không đúng định dạng' },
@@ -633,8 +663,8 @@ const OrderDetailAdmin = () => {
 
           <Row gutter={16}>
             <Col span={8}>
-              <Form.Item 
-                name="tinh" 
+              <Form.Item
+                name="tinh"
                 label="Tỉnh / Thành phố"
                 dependencies={['quan', 'xa']}
                 rules={[
@@ -655,8 +685,8 @@ const OrderDetailAdmin = () => {
               <Form.Item name="provinceName" hidden><Input /></Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item 
-                name="quan" 
+              <Form.Item
+                name="quan"
                 label="Quận / Huyện"
                 dependencies={['tinh', 'xa']}
                 rules={[
@@ -677,8 +707,8 @@ const OrderDetailAdmin = () => {
               <Form.Item name="districtName" hidden><Input /></Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item 
-                name="xa" 
+              <Form.Item
+                name="xa"
                 label="Phường / Xã"
                 dependencies={['tinh', 'quan']}
                 rules={[
@@ -699,8 +729,8 @@ const OrderDetailAdmin = () => {
               <Form.Item name="wardName" hidden><Input /></Form.Item>
             </Col>
           </Row>
-          <Form.Item 
-            name="diaChiChiTiet" 
+          <Form.Item
+            name="diaChiChiTiet"
             label="Địa chỉ chi tiết"
             rules={[
               { whitespace: true, message: 'Địa chỉ không được chỉ chứa khoảng trắng' },
@@ -715,8 +745,8 @@ const OrderDetailAdmin = () => {
           </Row>
           <Row gutter={16}>
             <Col span={24}>
-              <Form.Item 
-                name="ghiChu" 
+              <Form.Item
+                name="ghiChu"
                 label="Ghi chú"
                 rules={[
                   { whitespace: true, message: 'Ghi chú không được chỉ chứa khoảng trắng' },

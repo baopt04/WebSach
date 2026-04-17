@@ -168,6 +168,11 @@ const CouponsPage = () => {
       if (end.isBefore(now)) {
         return Promise.reject(new Error('Ngày kết thúc phải ở trong tương lai'));
       }
+    } else {
+      const isStatusActive = form.getFieldValue('status');
+      if (isStatusActive && end.isBefore(now)) {
+        return Promise.reject(new Error('Hãy chỉnh ngày kết thúc lớn hơn ngày hiện tại để bật trạng thái hoạt động'));
+      }
     }
 
     return Promise.resolve();
@@ -196,7 +201,11 @@ const CouponsPage = () => {
           };
 
           if (editingItem) {
-            payload.trangThai = values.status ? 'HOAT_DONG' : 'NGUNG_HOAT_DONG';
+            if (!values.status && editingItem.status === 'CHUA_KICH_HOAT') {
+              payload.trangThai = 'CHUA_KICH_HOAT';
+            } else {
+              payload.trangThai = values.status ? 'HOAT_DONG' : 'NGUNG_HOAT_DONG';
+            }
             await updateVoucher(editingItem.id, payload);
             message.success("Cập nhật thành công");
           } else {
@@ -230,11 +239,11 @@ const CouponsPage = () => {
       key: 'value',
       render: (_, r) => <strong style={{ color: '#fa8c16' }}>{r.voucherType === 'GIAM_THEO_PHAN_TRAM' ? `${r.value}%` : `${r.value?.toLocaleString('vi-VN')}₫`}</strong>,
     },
-    {
+    voucherTab === 'GIAM_THEO_PHAN_TRAM' ? {
       title: 'Giảm tối đa',
       key: 'giamToiDa',
       render: (_, r) => r.voucherType === 'GIAM_THEO_PHAN_TRAM' && r.giamToiDa ? `${r.giamToiDa?.toLocaleString('vi-VN')}₫` : '-',
-    },
+    } : null,
     {
       title: 'Đơn tối thiểu',
       dataIndex: 'minOrder',
@@ -272,7 +281,7 @@ const CouponsPage = () => {
         </Space>
       ),
     },
-  ];
+  ].filter(Boolean);
 
   const tabItems = [
     { key: 'GIAM_THEO_TIEN', label: ' Giảm theo tiền' },
@@ -367,14 +376,14 @@ const CouponsPage = () => {
                   label={isPercent ? "Giá trị giảm (%)" : "Giá trị giảm (₫)"}
                   rules={[
                     { required: true, message: "Vui lòng nhập giá trị giảm" },
-                    isPercent ? { type: 'number', min: 1, max: 100, message: 'Từ 1% đến 100%' } : { type: 'number', min: 1000, message: 'Từ 1,000₫' },
+                    isPercent ? { type: 'number', min: 1, max: 80, message: 'Từ 1% đến 80%' } : { type: 'number', min: 1000, message: 'Từ 1,000₫' },
                     !isPercent ? { type: 'number', max: 50000000, message: 'Không được quá 50,000,000₫' } : {}
                   ].filter(rule => Object.keys(rule).length > 0)}
                 >
                   <InputNumber
                     style={{ width: '100%' }}
                     min={isPercent ? 1 : 1000}
-                    max={isPercent ? 100 : undefined}
+                    max={isPercent ? 80 : undefined}
                     placeholder={isPercent ? "Nhập % giảm" : "Nhập số tiền giảm"}
                     formatter={value => isPercent ? `${value}` : value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
                     parser={value => isPercent ? value : value ? value.replace(/,/g, '') : ''}
@@ -464,7 +473,25 @@ const CouponsPage = () => {
           </Form.Item>
           {editingItem && (
             <Form.Item name="status" label="Trạng thái hoạt động" valuePropName="checked">
-              <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
+              <Switch 
+                checkedChildren="Bật" 
+                unCheckedChildren="Tắt" 
+                onChange={(checked) => {
+                  if (checked) {
+                    const dateRange = form.getFieldValue('dateRange');
+                    if (dateRange && dateRange[1]) {
+                      if (dayjs(dateRange[1]).isBefore(dayjs())) {
+                        message.warning("Hãy chỉnh ngày kết thúc lớn hơn ngày hiện tại để bật lại trạng thái");
+                        setTimeout(() => {
+                           form.setFieldsValue({ status: false });
+                        }, 0);
+                      }
+                    }
+                  } else {
+                    form.validateFields(['dateRange']);
+                  }
+                }}
+              />
             </Form.Item>
           )}
 

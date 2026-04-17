@@ -8,16 +8,16 @@ const { Title } = Typography;
 const PageHeader = ({
   title,
   onAdd,
-  addLabel = 'Thêm mới',
+  addLabel = '',
   extra,
-  showAdd = true,
+  showAdd = false,
 }) => {
   return (
     <div className="admin-page-header">
       <Title level={4} className="admin-page-title">
-        {title}
+        {/* {title} */}
       </Title>
-      <div className="admin-page-header-actions">
+      {/* <div className="admin-page-header-actions">
         {extra}
         {showAdd && (
           <Button
@@ -29,7 +29,7 @@ const PageHeader = ({
             {addLabel}
           </Button>
         )}
-      </div>
+      </div> */}
     </div>
   );
 };

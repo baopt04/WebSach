@@ -436,7 +436,7 @@ const AccountsPage = () => {
             setCurrentPage(1);
           }}
           items={[
-            { key: 'admin', label: 'Tài khoản Nội bộ (Admin/Nhân viên)' },
+            { key: 'admin', label: 'Tài khoản Admin' },
             { key: 'customer', label: 'Tài khoản Khách hàng' }
           ]}
         />

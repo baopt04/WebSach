@@ -32,6 +32,7 @@ public interface SachRepository extends JpaRepository<Sach, Integer> {
 
     Optional<Sach> findFirstByMaVach(String maVach);
     List<Sach> findByTenSachContainingIgnoreCase(String keyword);
+    List<Sach> findByTenSachContainingIgnoreCaseAndTrangThaiTrue(String keyword);
 
     List<Sach> findByTheLoai_Id(Integer idTheLoai);
 

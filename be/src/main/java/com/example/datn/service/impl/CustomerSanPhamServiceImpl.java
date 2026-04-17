@@ -143,6 +143,15 @@ public class CustomerSanPhamServiceImpl implements CustomerSanPhamService {
         return mapToResponse(books);
     }
 
+    @Override
+    public List<ClientSanPhamResponse> searchSanPhamByTen(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return getAllSanPham();
+        }
+        List<Sach> books = sachRepository.findByTenSachContainingIgnoreCaseAndTrangThaiTrue(keyword.trim());
+        return mapToResponse(books);
+    }
+
     private List<ClientSanPhamResponse> mapToResponse(List<Sach> books) {
         if (books.isEmpty()) {
             return Collections.emptyList();

@@ -6,8 +6,9 @@ import {
   ShoppingCartOutlined,
   MenuOutlined,
   CloseOutlined,
+  CarOutlined,
 } from '@ant-design/icons';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import './ClientHeader.css';
 
@@ -21,9 +22,17 @@ const navItems = [
 
 const ClientHeader = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState('');
   const [mobileOpen, setMobileOpen] = useState(false);
   const { cartCount } = useCart();
+
+  const handleSearch = () => {
+    const keyword = searchKeyword.trim();
+    navigate(keyword ? `/products?keyword=${encodeURIComponent(keyword)}` : '/products');
+    setSearchOpen(false);
+  };
 
   return (
     <header className="client-header">
@@ -34,7 +43,6 @@ const ClientHeader = () => {
           <span className="logo-text">DREAM BOOK</span>
         </Link>
 
-        {/* Nav desktop */}
         <nav className="header-nav">
           {navItems.map((item) => (
             <Link
@@ -46,8 +54,6 @@ const ClientHeader = () => {
             </Link>
           ))}
         </nav>
-
-        {/* Right actions */}
         <div className="header-actions">
           {searchOpen ? (
             <div className="search-box">
@@ -55,13 +61,15 @@ const ClientHeader = () => {
                 autoFocus
                 placeholder="Tìm kiếm sản phẩm..."
                 prefix={<SearchOutlined />}
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
                 suffix={
                   <CloseOutlined
                     className="close-search"
                     onClick={() => setSearchOpen(false)}
                   />
                 }
-                onPressEnter={() => setSearchOpen(false)}
+                onPressEnter={handleSearch}
               />
             </div>
           ) : (
@@ -73,6 +81,10 @@ const ClientHeader = () => {
               <SearchOutlined />
             </button>
           )}
+
+          <Link to="/order-tracking" className="action-btn" title="Tra cứu đơn hàng">
+            <CarOutlined />
+          </Link>
 
           <Link
             to={localStorage.getItem("token") ? "/account" : "/login"}
@@ -88,7 +100,6 @@ const ClientHeader = () => {
             </Badge>
           </Link>
 
-          {/* Mobile menu button */}
           <button
             className="action-btn mobile-menu-btn"
             onClick={() => setMobileOpen(true)}
@@ -98,7 +109,6 @@ const ClientHeader = () => {
         </div>
       </div>
 
-      {/* Mobile Drawer */}
       <Drawer
         title={
           <Link to="/" className="header-logo" onClick={() => setMobileOpen(false)}>

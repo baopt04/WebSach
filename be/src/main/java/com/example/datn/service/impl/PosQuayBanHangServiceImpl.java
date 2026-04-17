@@ -341,6 +341,8 @@ public class PosQuayBanHangServiceImpl implements PosQuayBanHangService {
             if (phi.compareTo(BigDecimal.ZERO) < 0) {
                 throw new AppException(HttpStatus.BAD_REQUEST, "Phí ship không được âm");
             }
+            phi = phi.divide(BigDecimal.valueOf(10000), 0, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(10000));
             hoaDon.setDiaChiGiaoHang(request.getDiaChiGiaoHang().trim());
             hoaDon.setPhiShip(phi);
             hoaDon.setNgayNhan(request.getNgayNhan());
@@ -393,10 +395,13 @@ public class PosQuayBanHangServiceImpl implements PosQuayBanHangService {
                 ? request.getPhuongThucThanhToan()
                 : PaymentMethod.TIEN_MAT;
 
-        hoaDon.setTrangThai(OrderStatus.THANH_CONG);
+        boolean giaoHang = isGiaoHang(request);
+        OrderStatus trangThaiSauThanhToan = giaoHang ? OrderStatus.CHO_XAC_NHAN : OrderStatus.THANH_CONG;
+
+        hoaDon.setTrangThai(trangThaiSauThanhToan);
         hoaDon.setPhuongThuc(pm);
         hoaDon.setNgayCapNhat(now);
-        hoaDon.setNgayGiaoThanhCong(now);
+        hoaDon.setNgayGiaoThanhCong(giaoHang ? null : now);
         if (request.getGhiChu() != null && !request.getGhiChu().isBlank()) {
             String old = hoaDon.getGhiChu();
             if (old == null || old.isBlank()) {
@@ -408,13 +413,13 @@ public class PosQuayBanHangServiceImpl implements PosQuayBanHangService {
         hoaDonRepository.save(hoaDon);
 
         for (HoaDonChiTiet ct : chiTiets) {
-            ct.setTrangThai(OrderStatus.THANH_CONG);
+            ct.setTrangThai(trangThaiSauThanhToan);
             ct.setNgayCapNhat(now);
         }
         hoaDonChiTietRepository.saveAll(chiTiets);
 
         String ghiChuLs = "Thanh toán tại quầy (POS)";
-        if (isGiaoHang(request)) {
+        if (giaoHang) {
             ghiChuLs = ghiChuLs + " — Giao hàng";
             LocalDate nn = request.getNgayNhan();
             if (nn != null) {
@@ -430,7 +435,7 @@ public class PosQuayBanHangServiceImpl implements PosQuayBanHangService {
         lichSuDonHangRepository.save(LichSuDonHang.builder()
                 .taiKhoan(nhanVien)
                 .hoaDon(hoaDon)
-                .trangThai(OrderStatus.THANH_CONG)
+                .trangThai(trangThaiSauThanhToan)
                 .ghiChu(ghiChuLs)
                 .ngayTao(now)
                 .build());

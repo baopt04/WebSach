@@ -46,7 +46,6 @@ public class MaGiamGiaRequest {
     @NotNull(message = "Loại giảm giá không được để trống")
     private VoucherType voucherType;
 
-    /** Chỉ dùng khi voucherType = GIAM_THEO_PHAN_TRAM */
     private BigDecimal giamToiDa;
 
     private VoucherStatus trangThai;

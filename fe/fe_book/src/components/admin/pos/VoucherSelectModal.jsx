@@ -55,6 +55,12 @@ const VoucherSelectModal = ({ visible, onCancel, onSelect, minAmount = 0 }) => {
             render: (val) => val <= 100 ? `${val}%` : `${val?.toLocaleString('vi-VN')}₫`,
         },
         {
+            title: "Số lượng sử dụng",
+            dataIndex: "soLuong",
+            key: "soLuong",
+            render: (val) => <Tag color="blue">{val}</Tag>
+        },
+        {
             title: 'Hạn dùng',
             dataIndex: 'ngayKetThuc',
             key: 'ngayKetThuc',
