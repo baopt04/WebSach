@@ -573,7 +573,7 @@ const POSPage = () => {
             <PageHeader
                 title="Quản lý bán hàng"
                 showAdd={true}
-                addText="Tạo hóa đơn"
+                addLabel="Tạo hóa đơn"
                 onAdd={addBill}
             />
 

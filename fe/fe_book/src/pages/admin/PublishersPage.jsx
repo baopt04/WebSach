@@ -165,7 +165,7 @@ const PublishersPage = () => {
       <PageHeader
         title="Quản lý Nhà xuất bản"
         onAdd={openAdd}
-        addText="Thêm nhà xuất bản"
+        addLabel="Thêm nhà xuất bản"
       />
       <Card bordered={false} className="admin-card">
         <div className="admin-toolbar">

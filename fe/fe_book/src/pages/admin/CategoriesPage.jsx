@@ -152,7 +152,7 @@ const CategoriesPage = () => {
       <PageHeader
         title="Quản lý Thể loại"
         onAdd={openAdd}
-        addText="Thêm thể loại"
+        addLabel="Thêm thể loại"
       />
       <Card bordered={false} className="admin-card">
         <div className="admin-toolbar">

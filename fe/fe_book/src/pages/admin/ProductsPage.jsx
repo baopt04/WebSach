@@ -251,7 +251,7 @@ const ProductsPage = () => {
       <PageHeader
         title="Quản lý Sản phẩm"
         onAdd={() => navigate('/admin/products/new')}
-        addText="Thêm sản phẩm"
+        addLabel="Thêm sản phẩm"
       />
       <Card bordered={false} className="admin-card">
         <div className="admin-toolbar">

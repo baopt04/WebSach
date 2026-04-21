@@ -162,7 +162,7 @@ const AuthorsPage = () => {
       <PageHeader
         title="Quản lý Tác giả"
         onAdd={openAdd}
-        addText="Thêm tác giả"
+        addLabel="Thêm tác giả"
       />
       <Card bordered={false} className="admin-card">
         <div className="admin-toolbar">
