@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import ProductTimeline from '../../components/ProductTimeline/ProductTimeline';
-import { getSanPhamBanChay, getSanPhamMoiNhat } from '../../services/client/SanPhamCustomer';
+import { getSanPhamBanChay, getSanPhamMoiNhat , getSanPhamGiaTot} from '../../services/client/SanPhamCustomer';
 import './HomePage.css';
 import './HomePage.css';
 
@@ -104,13 +104,15 @@ const StatsBanner = () => (
 const HomePage = () => {
   const [bestSellers, setBestSellers] = useState([]);
   const [newArrivals, setNewArrivals] = useState([]);
+  const [productMoney , setProductMoney] = useState([]);
 
   useEffect(() => {
     const fetchHomeData = async () => {
       try {
-        const [banChayData, moiNhatData] = await Promise.all([
+        const [banChayData, moiNhatData , giaTotData] = await Promise.all([
           getSanPhamBanChay(),
-          getSanPhamMoiNhat()
+          getSanPhamMoiNhat(), 
+          getSanPhamGiaTot(),
         ]);
 
         const mapProduct = (item, isHot, isNew) => ({
@@ -131,6 +133,9 @@ const HomePage = () => {
 
         if (Array.isArray(moiNhatData)) {
           setNewArrivals(moiNhatData.map(item => mapProduct(item, false, true)));
+        }
+           if (Array.isArray(giaTotData)) {
+          setProductMoney(giaTotData.map(item => mapProduct(item, false, true)));
         }
       } catch (error) {
         console.error("Failed to fetch home data:", error);
@@ -162,9 +167,9 @@ const HomePage = () => {
         />
 
         <ProductTimeline
-          title="✨ Được xem nhiều nhất"
+          title="✨ Sản phẩm có giá tốt"
           subtitle="Độc giả tìm kiếm nhiều nhất – không thể bỏ qua"
-          products={featured}
+          products={productMoney}
           accentColor="linear-gradient(135deg, #43e97b, #38f9d7)"
         />
       </div>

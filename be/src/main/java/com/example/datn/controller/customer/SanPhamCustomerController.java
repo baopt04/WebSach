@@ -37,6 +37,11 @@ public class SanPhamCustomerController {
         return ResponseEntity.ok(clientSanPhamService.getSanPhamMoiNhat());
     }
 
+    @GetMapping("/gia-tot")
+    public ResponseEntity<List<ClientSanPhamResponse>> getSanPhamGiaTot() {
+        return ResponseEntity.ok(clientSanPhamService.getSanPhamGiaTot());
+    }
+
     @GetMapping("/chi-tiet/{id}")
     public ResponseEntity<?> getChiTietSach(@PathVariable Integer id) {
         try {

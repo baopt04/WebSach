@@ -60,6 +60,15 @@ export const getSanPhamMoiNhat = async () => {
     }
 };
 
+export const getSanPhamGiaTot = async () => {
+    try {
+        const res = await axiosClient.get(`${BASE}/gia-tot`);
+        return res.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
 export const getChiTietSanPham = async (id) => {
     try {
         if (!id) throw new Error("ID không hợp lệ");

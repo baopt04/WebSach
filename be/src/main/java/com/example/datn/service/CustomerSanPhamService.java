@@ -8,6 +8,7 @@ public interface CustomerSanPhamService {
     List<ClientSanPhamResponse> getAllSanPham();
     List<ClientSanPhamResponse> getSanPhamBanChay();
     List<ClientSanPhamResponse> getSanPhamMoiNhat();
+    List<ClientSanPhamResponse> getSanPhamGiaTot();
     ClientSachDetailResponse getChiTietSach(Integer id);
     void validateQuantity(Integer id, Integer quantity);
 

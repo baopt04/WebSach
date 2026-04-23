@@ -76,8 +76,12 @@ export const updateSachMultipart = async (id, data, images) => {
 
         const formData = new FormData();
 
+        console.log("Dữ liệu cập nhật sản phẩm multipart:", data);
         Object.keys(data).forEach((key) => {
-            formData.append(key, data[key]);
+            if (data[key] !== null && data[key] !== undefined) {
+                console.log(`Thêm trường dữ liệu: ${key} =`, data[key]);
+                formData.append(key, data[key]);
+            }
         });
 
         if (images && images.length > 0) {

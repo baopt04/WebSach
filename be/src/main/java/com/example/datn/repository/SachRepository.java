@@ -14,6 +14,9 @@ public interface SachRepository extends JpaRepository<Sach, Integer> {
     @Query("SELECT s FROM Sach s WHERE s.trangThai = true ORDER BY s.ngayTao DESC")
     List<Sach> findTop10Newest(Pageable pageable);
 
+    @Query("SELECT s FROM Sach s WHERE s.trangThai = true ORDER BY s.giaBan ASC")
+    List<Sach> findTop10ByBestPrice(Pageable pageable);
+
     @Query("SELECT s.id FROM HoaDonChiTiet hdct " +
            "JOIN hdct.hoaDon hd " +
            "JOIN hdct.sach s " +

@@ -32,6 +32,7 @@ public class SachRequest {
     private String kichThuoc;
     private String moTa;
 
+    private Boolean trangThai;
 
     @NotNull(message = "Phải chọn thể loại")
     private Integer idTheLoai;

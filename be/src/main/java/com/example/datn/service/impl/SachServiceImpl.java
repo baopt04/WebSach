@@ -187,6 +187,7 @@ public class SachServiceImpl implements SachService {
         sach.setTheLoai(theLoai);
         sach.setNhaXuatBan(nxb);
         sach.setNgayCapNhat(LocalDateTime.now());
+        sach.setTrangThai(request.getTrangThai());
 
         Sach savedSach = sachRepository.save(sach);
 
@@ -234,7 +235,7 @@ public class SachServiceImpl implements SachService {
         sach.setTheLoai(theLoai);
         sach.setNhaXuatBan(nxb);
         sach.setNgayCapNhat(LocalDateTime.now());
-
+        sach.setTrangThai(request.getTrangThai());
         Sach savedSach = sachRepository.save(sach);
 
         if (images != null && !images.isEmpty()) {

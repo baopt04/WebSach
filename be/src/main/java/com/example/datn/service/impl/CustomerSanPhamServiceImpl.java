@@ -62,6 +62,12 @@ public class CustomerSanPhamServiceImpl implements CustomerSanPhamService {
         List<Sach> newestBooks = sachRepository.findTop10Newest(PageRequest.of(0, 10));
         return mapToResponse(newestBooks);
     }
+    
+    @Override
+    public List<ClientSanPhamResponse> getSanPhamGiaTot() {
+        List<Sach> bestPriceBooks = sachRepository.findTop10ByBestPrice(PageRequest.of(0, 10));
+        return mapToResponse(bestPriceBooks);
+    }
 
     @Override
     public ClientSachDetailResponse getChiTietSach(Integer id) {

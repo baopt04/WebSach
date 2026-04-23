@@ -142,8 +142,8 @@ const ProductFormPage = () => {
   const handleRemove = async (file) => {
     if (isEdit && typeof file.uid === 'number') {
       deleteSachImage(id, file.uid)
-        .then(() => message.success('Đã xóa ảnh trên máy chủ'))
-        .catch(() => message.error('Lỗi khi xóa ảnh trên máy chủ'));
+        .then(() => message.success('Xóa ảnh thành công'))
+        .catch(() => message.error('Lỗi khi xóa ảnhủ'));
     }
     return true;
   };
@@ -165,6 +165,9 @@ const ProductFormPage = () => {
             tenSach: formValues.tenSach ? formValues.tenSach.trim() : '',
             namXuatBan: formValues.namXuatBan ? formValues.namXuatBan.year() : null
           };
+
+          console.log("Dữ liệu gửi từ form:", values);
+          console.log("Dữ liệu sản phẩm chuẩn bị gửi:", productData);
 
           const newImages = fileList
             .filter(file => !file.url)
@@ -316,6 +319,7 @@ const ProductFormPage = () => {
                     name="soTrang" 
                     label="Số trang"
                     rules={[
+                      { required: true, message: 'Vui lòng nhập số trang' },
                       { type: 'integer', message: 'Số trang phải là số nguyên' },
                       { min: 1, type: 'number', message: 'Số trang phải lớn hơn 0' }
                     ]}
